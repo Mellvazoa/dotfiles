@@ -126,3 +126,14 @@ For wallpapers matching Arona, the original signature handcrafted palette is str
 The app menu in sketchybar gets split into two halves so nothing ends up hidden behind the notch. On my Air the notch goes from about x=646 to x=825, so the first 9 menu items (App through Window) sit to the left of it, and everything from Help onward goes to the right. If an app doesn't have that many menu items (like Finder), the right half just doesn't show up.
 
 If your Mac has a different screen size, these numbers are what you'll need to change.
+
+## Wallpaper daemon
+
+I wrote a small daemon in Swift (`wallpaper_gallery`) that sits in the background and does two things:
+
+1. When on an empty desktop, it shows a minimal floating pill at the bottom center with the current wallpaper's title. The moment any window covers the workspace, it disappears.
+2. Clicking the pill or pressing `Alt + G` opens a 3D coverflow picker. It scans `~/wallpapers` (and any subfolders), has search with `/`, and applies wallpapers on the fly.
+
+![gallery](assets/gallery.jpg)
+
+When a wallpaper is selected, it samples the dominant colors and updates everything across the system: kitty colors, window border gradients, yabai insert feedback, sketchybar pills, and the gallery interface itself. If the wallpaper has "arona" in the name, it falls back to the original lavender setup.
