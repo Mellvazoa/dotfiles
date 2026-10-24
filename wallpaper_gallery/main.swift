@@ -323,6 +323,10 @@ class GalleryWindow: NSPanel, WKScriptMessageHandler, WKNavigationDelegate {
         controller.add(self, name: "bridge")
         config.userContentController = controller
 
+        // Allow loading local file:// image resources
+        config.preferences.setValue(true, forKey: "allowFileAccessFromFileURLs")
+        config.setValue(true, forKey: "allowUniversalAccessFromFileURLs")
+
         webView = WKWebView(frame: screen.frame, configuration: config)
         webView.navigationDelegate = self
         webView.setValue(false, forKey: "drawsBackground")
@@ -335,9 +339,12 @@ class GalleryWindow: NSPanel, WKScriptMessageHandler, WKNavigationDelegate {
     func loadGalleryHTML() {
         let execURL = URL(fileURLWithPath: CommandLine.arguments[0]).resolvingSymlinksInPath()
         let execDir = execURL.deletingLastPathComponent().path
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
         let possiblePaths = [
             "\(execDir)/gallery.html",
             "\(execDir)/../gallery.html",
+            "\(home)/.local/bin/gallery.html",
+            "\(home)/bin/gallery.html",
             "/Users/new/Documents/Antigravity/waybar/wallpaper_gallery/gallery.html"
         ]
 
@@ -351,12 +358,11 @@ class GalleryWindow: NSPanel, WKScriptMessageHandler, WKNavigationDelegate {
         }
 
         if let url = htmlURL {
-            let homeURL = FileManager.default.homeDirectoryForCurrentUser
-            if let htmlContent = try? String(contentsOf: url, encoding: .utf8) {
-                webView.loadHTMLString(htmlContent, baseURL: homeURL)
-            } else {
-                webView.loadFileURL(url, allowingReadAccessTo: homeURL)
-            }
+            let rootURL = URL(fileURLWithPath: "/")
+            webView.loadFileURL(url, allowingReadAccessTo: rootURL)
+            NSLog(">>> Loaded gallery from URL: \(url.path) with root access")
+        } else {
+            NSLog(">>> ERROR: gallery.html not found in any expected location!")
         }
     }
 

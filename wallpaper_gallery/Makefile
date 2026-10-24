@@ -14,6 +14,8 @@ $(TARGET): $(SRC)
 install: $(TARGET)
 	@mkdir -p ~/bin ~/.local/bin 2>/dev/null || true
 	cp $(TARGET) ~/.local/bin/wallpaper_gallery 2>/dev/null || cp $(TARGET) ~/bin/wallpaper_gallery
+	cp gallery.html ~/.local/bin/gallery.html 2>/dev/null || true
+	cp gallery.html ~/bin/gallery.html 2>/dev/null || true
 
 clean:
 	rm -rf bin/

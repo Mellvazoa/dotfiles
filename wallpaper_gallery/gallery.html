@@ -324,7 +324,7 @@
         
         const img = document.createElement("img");
         img.src = "file://" + encodeURI(wp.path);
-        img.loading = "lazy";
+        img.decoding = "async";
         card.appendChild(img);
 
         card.addEventListener("click", (e) => {
