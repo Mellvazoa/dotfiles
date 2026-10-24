@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Wallpaper Gallery</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: rgba(12, 14, 28, 0.78);
+      backdrop-filter: blur(28px) saturate(140%);
+      -webkit-backdrop-filter: blur(28px) saturate(140%);
+      font-family: "JetBrainsMono Nerd Font", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      color: #f0edfc;
+    }
+
+    .top-badge {
+      position: absolute;
+      top: 36px;
+      padding: 6px 16px;
+      background: rgba(20, 23, 47, 0.7);
+      border: 1px solid rgba(200, 180, 250, 0.25);
+      border-radius: 20px;
+      font-size: 11px;
+      letter-spacing: 2px;
+      color: #c8b4fa;
+      text-transform: uppercase;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .close-btn {
+      position: absolute;
+      top: 36px;
+      right: 48px;
+      width: 32px;
+      height: 32px;
+      background: rgba(20, 23, 47, 0.7);
+      border: 1px solid rgba(200, 180, 250, 0.25);
+      border-radius: 50%;
+      color: #c8b4fa;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .close-btn:hover {
+      background: #c8b4fa;
+      color: #14172f;
+      transform: scale(1.08);
+    }
+
+    .stage {
+      width: 100vw;
+      height: 480px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      perspective: 1200px;
+      perspective-origin: 50% 50%;
+      position: relative;
+    }
+
+    .carousel {
+      width: 0;
+      height: 0;
+      position: relative;
+      transform-style: preserve-3d;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .card {
+      position: absolute;
+      width: 220px;
+      height: 390px;
+      left: -110px;
+      top: -195px;
+      border-radius: 12px;
+      overflow: hidden;
+      cursor: pointer;
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.65);
+      border: 1px solid rgba(200, 180, 250, 0.25);
+      transition: transform 0.4s cubic-bezier(0.2, 0.9, 0.3, 1),
+                  opacity 0.4s ease,
+                  filter 0.4s ease,
+                  box-shadow 0.4s ease,
+                  border-color 0.4s ease;
+      background: #14172f;
+      transform-style: preserve-3d;
+      will-change: transform, opacity;
+    }
+
+    .card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      pointer-events: none;
+    }
+
+    .card.active {
+      border: 2px solid #c8b4fa;
+      box-shadow: 0 0 35px rgba(200, 180, 250, 0.45), 0 25px 60px rgba(0, 0, 0, 0.85);
+      cursor: pointer;
+    }
+
+    .card.active::after {
+      content: "⏎ APPLY";
+      position: absolute;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(20, 23, 47, 0.85);
+      border: 1px solid #c8b4fa;
+      color: #c8b4fa;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .card.active:hover::after {
+      opacity: 1;
+    }
+
+    .bottom-bar {
+      position: absolute;
+      bottom: 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      text-align: center;
+    }
+
+    .wallpaper-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: #c8b4fa;
+      letter-spacing: 0.5px;
+      text-shadow: 0 2px 10px rgba(200, 180, 250, 0.3);
+      max-width: 600px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .wallpaper-meta {
+      font-size: 12px;
+      color: #8a8eb5;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .tag {
+      background: rgba(200, 180, 250, 0.12);
+      color: #c8b4fa;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+    }
+
+    .shortcuts-hint {
+      margin-top: 4px;
+      font-size: 11px;
+      color: rgba(240, 237, 252, 0.45);
+      display: flex;
+      gap: 16px;
+    }
+
+    .shortcuts-hint kbd {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      color: #f0edfc;
+    }
+  </style>
+</head>
+<body id="bg">
+  <div class="top-badge">
+    <span>󰸉</span> Wallpaper Gallery (<span id="count">0</span>)
+  </div>
+
+  <div class="close-btn" id="closeBtn" title="Close (Esc)">✕</div>
+
+  <div class="stage" id="stage">
+    <div class="carousel" id="carousel"></div>
+  </div>
+
+  <div class="bottom-bar">
+    <div class="wallpaper-title" id="title">Loading...</div>
+    <div class="wallpaper-meta">
+      <span class="tag" id="folderTag">folder</span>
+      <span id="indexTag">0 / 0</span>
+    </div>
+    <div class="shortcuts-hint">
+      <span><kbd>←</kbd> <kbd>→</kbd> Navigate</span>
+      <span><kbd>⏎</kbd> Set Wallpaper</span>
+      <span><kbd>⎋ Esc</kbd> Close</span>
+    </div>
+  </div>
+
+  <script>
+    let wallpapers = [];
+    let currentIndex = 0;
+    let isWheeling = false;
+    let wheelTimeout = null;
+
+    const carousel = document.getElementById("carousel");
+    const titleEl = document.getElementById("title");
+    const folderTagEl = document.getElementById("folderTag");
+    const indexTagEl = document.getElementById("indexTag");
+    const countEl = document.getElementById("count");
+
+    function renderCards() {
+      carousel.innerHTML = "";
+      wallpapers.forEach((wp, idx) => {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.id = "card-" + idx;
+        
+        const img = document.createElement("img");
+        img.src = "file://" + encodeURI(wp.path);
+        img.loading = "lazy";
+        card.appendChild(img);
+
+        card.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (idx === currentIndex) {
+            selectCurrent();
+          } else {
+            setIndex(idx);
+          }
+        });
+
+        carousel.appendChild(card);
+      });
+
+      updateLayout();
+    }
+
+    function updateLayout() {
+      if (wallpapers.length === 0) return;
+
+      const total = wallpapers.length;
+      countEl.innerText = total;
+
+      const maxVisible = 7; // items visible on each side
+
+      wallpapers.forEach((_, idx) => {
+        const card = document.getElementById("card-" + idx);
+        if (!card) return;
+
+        const d = idx - currentIndex;
+        const absD = Math.abs(d);
+
+        if (absD > maxVisible) {
+          card.style.display = "none";
+          return;
+        }
+
+        card.style.display = "block";
+
+        if (d === 0) {
+          card.className = "card active";
+          card.style.transform = "translateX(0) translateZ(110px) rotateY(0deg) scale(1.04)";
+          card.style.opacity = "1";
+          card.style.filter = "brightness(1.05)";
+          card.style.zIndex = "100";
+        } else if (d > 0) {
+          card.className = "card";
+          const x = 145 + (d - 1) * 72;
+          const z = -40 - (d - 1) * 45;
+          const scale = Math.max(0.68, 1 - d * 0.055);
+          const opacity = Math.max(0.2, 1 - d * 0.12);
+          const rotY = -35;
+          card.style.transform = `translateX(${x}px) translateZ(${z}px) rotateY(${rotY}deg) scale(${scale})`;
+          card.style.opacity = opacity.toString();
+          card.style.filter = `brightness(${Math.max(0.5, 0.9 - d * 0.08)})`;
+          card.style.zIndex = (100 - d).toString();
+        } else {
+          card.className = "card";
+          const x = -145 - (absD - 1) * 72;
+          const z = -40 - (absD - 1) * 45;
+          const scale = Math.max(0.68, 1 - absD * 0.055);
+          const opacity = Math.max(0.2, 1 - absD * 0.12);
+          const rotY = 35;
+          card.style.transform = `translateX(${x}px) translateZ(${z}px) rotateY(${rotY}deg) scale(${scale})`;
+          card.style.opacity = opacity.toString();
+          card.style.filter = `brightness(${Math.max(0.5, 0.9 - absD * 0.08)})`;
+          card.style.zIndex = (100 - absD).toString();
+        }
+      });
+
+      const current = wallpapers[currentIndex];
+      if (current) {
+        titleEl.innerText = current.name;
+        folderTagEl.innerText = current.category || "wallpapers";
+        indexTagEl.innerText = `${currentIndex + 1} / ${total}`;
+      }
+    }
+
+    function setIndex(index) {
+      if (wallpapers.length === 0) return;
+      if (index < 0) index = 0;
+      if (index >= wallpapers.length) index = wallpapers.length - 1;
+      currentIndex = index;
+      updateLayout();
+    }
+
+    function prev() {
+      setIndex(currentIndex - 1);
+    }
+
+    function next() {
+      setIndex(currentIndex + 1);
+    }
+
+    function selectCurrent() {
+      if (wallpapers.length === 0) return;
+      const current = wallpapers[currentIndex];
+      if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.bridge) {
+        window.webkit.messageHandlers.bridge.postMessage({
+          action: "select",
+          path: current.path,
+          name: current.name
+        });
+      }
+    }
+
+    function closeGallery() {
+      if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.bridge) {
+        window.webkit.messageHandlers.bridge.postMessage({
+          action: "close"
+        });
+      }
+    }
+
+    // Keyboard navigation
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowLeft" || e.key === "h") {
+        prev();
+      } else if (e.key === "ArrowRight" || e.key === "l") {
+        next();
+      } else if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        selectCurrent();
+      } else if (e.key === "Escape" || e.key === "q") {
+        closeGallery();
+      }
+    });
+
+    // Mouse wheel / trackpad horizontal scrolling with debouncing
+    window.addEventListener("wheel", (e) => {
+      e.preventDefault();
+      const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+      if (Math.abs(delta) < 12) return;
+
+      if (!isWheeling) {
+        isWheeling = true;
+        if (delta > 0) next();
+        else prev();
+
+        setTimeout(() => {
+          isWheeling = false;
+        }, 140);
+      }
+    }, { passive: false });
+
+    // Close on click outside cards
+    document.getElementById("bg").addEventListener("click", (e) => {
+      if (e.target === document.getElementById("bg") || e.target === document.getElementById("stage")) {
+        closeGallery();
+      }
+    });
+
+    document.getElementById("closeBtn").addEventListener("click", closeGallery);
+
+    // Bridge function called from Swift
+    window.loadWallpapers = function(items, activePath) {
+      wallpapers = items || [];
+      currentIndex = 0;
+      if (activePath) {
+        const found = wallpapers.findIndex(w => w.path === activePath || activePath.endsWith(w.name));
+        if (found !== -1) currentIndex = found;
+      }
+      renderCards();
+    };
+  </script>
+</body>
+</html>

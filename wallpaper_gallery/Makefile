@@ -1,0 +1,20 @@
+TARGET = bin/wallpaper_gallery
+SRC = main.swift
+SWIFTC = swiftc
+SWIFTFLAGS = -O -framework AppKit -framework WebKit
+
+all: $(TARGET)
+
+$(TARGET): $(SRC)
+	@mkdir -p bin
+	$(SWIFTC) $(SWIFTFLAGS) -o $@ $<
+	@echo "Build complete: $(TARGET)"
+
+install: $(TARGET)
+	@mkdir -p ~/bin ~/.local/bin 2>/dev/null || true
+	cp $(TARGET) ~/.local/bin/wallpaper_gallery 2>/dev/null || cp $(TARGET) ~/bin/wallpaper_gallery
+
+clean:
+	rm -rf bin/
+
+.PHONY: all install clean

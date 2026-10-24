@@ -47,6 +47,12 @@ if [ -d "$DOTFILES_DIR/sketchybar/helpers" ]; then
     (cd "$DOTFILES_DIR/sketchybar/helpers" && make clean && make)
 fi
 
+# 4. Build 3D Wallpaper Gallery
+if [ -d "$DOTFILES_DIR/wallpaper_gallery" ]; then
+    echo "[*] Compiling 3D Wallpaper Gallery..."
+    (cd "$DOTFILES_DIR/wallpaper_gallery" && make)
+fi
+
 echo ""
 echo "Installation complete!"
 echo "To restart services:"

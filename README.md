@@ -13,6 +13,7 @@ Runs on a MacBook Air M3 13". Should work on other Apple Silicon Macs too, but t
 - `skhd/` — hotkeys, see below.
 - `kitty/` — terminal. 85% opacity with blur, JetBrains Mono Nerd Font, powerline tabs, my own color theme.
 - `rofi/` — not actual rofi (that's Linux only). It's a small Python launcher I wrote for apps and folders I open often.
+- `wallpaper_gallery/` — 3D Coverflow wallpaper picker written in Swift. Shows the current wallpaper title at the bottom center of the screen in lavender font. Clicking the pill (or pressing `Alt + G`) opens a 3D perspective gallery to browse `~/wallpapers` (and subfolders) and apply them on the fly.
 - `square_corners/` — an Objective-C tweak that gets rid of rounded window corners. Needs Ammonia or some other DYLD injection thing. Kind of experimental, use at your own risk.
 - `wallpapers/` — the wallpaper from the screenshot.
 
@@ -54,6 +55,7 @@ Everything is on `Alt` (Option).
 | :--- | :--- |
 | <kbd>Alt</kbd> + <kbd>Enter</kbd> | new kitty window |
 | <kbd>Cmd</kbd> + <kbd>Space</kbd> or <kbd>Alt</kbd> + <kbd>D</kbd> | launcher |
+| <kbd>Alt</kbd> + <kbd>G</kbd> | 3D wallpaper gallery |
 | <kbd>Alt</kbd> + <kbd>1</kbd>…<kbd>4</kbd> | go to space 1–4 |
 
 ## Installing

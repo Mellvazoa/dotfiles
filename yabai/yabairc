@@ -53,7 +53,7 @@ yabai -m rule --add app="^(Calculator|Калькулятор)$" manage=off grid=
 yabai -m rule --add app="^(Просмотр|Preview)$" manage=off grid=12:12:1:1:10:10
 
 # Другие системные приложения, которым противопоказан тайлинг
-yabai -m rule --add app="^(LuLu|Software Update|Обновление ПО|Dictionary|Словарь|VLC|zoom.us|Photo Booth|Archive Utility|Утилита архивации|Python|LibreOffice|App Store|Steam|Alfred|Activity Monitor|Мониторинг системы|Finder|Font Book|Шрифты|ColorSync Utility|Утилита ColorSync|Keychain Access|Связка ключей|Audio MIDI Setup|Настройка MIDI-Audio|Migration Assistant|Ассистент миграции|Shortcuts|Быстрые команды|Weather|Погода|Clock|Часы|Stocks|Акции|Maps|Карты|Reminders|Напоминания|Notes|Заметки|Music|Музыка|Podcasts|Подкасты|TV|Books|Книги)$" manage=off
+yabai -m rule --add app="^(LuLu|Software Update|Обновление ПО|Dictionary|Словарь|VLC|zoom.us|Photo Booth|Archive Utility|Утилита архивации|Python|LibreOffice|App Store|Steam|Alfred|Activity Monitor|Мониторинг системы|Finder|Font Book|Шрифты|ColorSync Utility|Утилита ColorSync|Keychain Access|Связка ключей|Audio MIDI Setup|Настройка MIDI-Audio|Migration Assistant|Ассистент миграции|Shortcuts|Быстрые команды|Weather|Погода|Clock|Часы|Stocks|Акции|Maps|Карты|Reminders|Напоминания|Notes|Заметки|Music|Музыка|Podcasts|Подкасты|TV|Books|Книги|wallpaper_gallery)$" manage=off
 yabai -m rule --add label="Safari" app="^Safari$" title="^(General|(Tab|Password|Website|Extension)s|AutoFill|Se(arch|curity)|Privacy|Advance)$" manage=off
 
 # --- ПРАВИЛА ПРОЗРАЧНОСТИ ПРИЛОЖЕНИЙ ---
@@ -62,5 +62,9 @@ yabai -m rule --add app="^Brave Browser$" opacity=0.85
 
 # Основной режим тайлинга
 yabai -m config layout bsp
+
+# Автозапуск виджета обоев (плашка внизу экрана + 3D Coverflow галерея)
+killall wallpaper_gallery 2>/dev/null || true
+"$HOME/.config/yabai/bin/wallpaper_gallery" 2>/dev/null || "$HOME/Documents/Antigravity/waybar/wallpaper_gallery/bin/wallpaper_gallery" &
 
 echo "yabai configuration loaded.."

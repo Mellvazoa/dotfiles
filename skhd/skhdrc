@@ -45,3 +45,6 @@ alt - 2 : yabai -m space --focus 2
 alt - 3 : yabai -m space --focus 3
 alt - 4 : yabai -m space --focus 4
 alt - return : open -n -a Kitty
+
+# 3D Coverflow галерея обоев
+alt - g : /Users/new/Documents/Antigravity/waybar/wallpaper_gallery/bin/wallpaper_gallery --toggle
