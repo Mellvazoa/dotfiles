@@ -29,6 +29,8 @@ struct ThemeColors {
 }
 
 class ThemeExtractor {
+    static var cache: [String: ThemeColors] = [:]
+
     // Original signature theme for Arona
     static let aronaTheme = ThemeColors(
         accentHex: "c8b4fa",
@@ -45,8 +47,13 @@ class ThemeExtractor {
     )
 
     static func extract(from path: String, name: String) -> ThemeColors {
+        if let cached = cache[path] {
+            return cached
+        }
+
         let lower = name.lowercased()
         if lower.contains("arona") || lower.contains("arcona") {
+            cache[path] = aronaTheme
             return aronaTheme
         }
 
@@ -141,7 +148,7 @@ class ThemeExtractor {
         let (bg1Hex, _)                = hslToHex(h: bestHue, s: 0.28, l: 0.14)
         let (bg2Hex, _)                = hslToHex(h: bestHue, s: 0.28, l: 0.20)
 
-        return ThemeColors(
+        let result = ThemeColors(
             accentHex: accentHex,
             accentLightHex: accentLightHex,
             accentDimHex: accentDimHex,
@@ -154,6 +161,8 @@ class ThemeExtractor {
             islandNSColor: islandNSColor,
             isArona: false
         )
+        cache[path] = result
+        return result
     }
 
     static func applyTheme(_ theme: ThemeColors) {
@@ -868,8 +877,18 @@ class GalleryWindow: NSPanel, WKScriptMessageHandler, WKNavigationDelegate {
         }
     }
 
+    func updateTheme(_ theme: ThemeColors) {
+        let js = "if (window.setTheme) { window.setTheme('#\(theme.accentHex)', '#\(theme.islandHex)', '#\(theme.textWhiteHex)'); }"
+        DispatchQueue.main.async { [weak self] in
+            self?.webView.evaluateJavaScript(js, completionHandler: nil)
+        }
+    }
+
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         isHTMLLoaded = true
+        if let theme = AppDelegate.shared?.currentTheme {
+            updateTheme(theme)
+        }
         if isVisible && alphaValue > 0.5 {
             injectWallpapers()
         }
@@ -878,9 +897,11 @@ class GalleryWindow: NSPanel, WKScriptMessageHandler, WKNavigationDelegate {
     func injectWallpapers() {
         let items = WallpaperScanner.scan()
         let currentPath = WallpaperScanner.currentWallpaperPath()
+        let theme = AppDelegate.shared?.currentTheme ?? ThemeExtractor.aronaTheme
         if let jsonData = try? JSONEncoder().encode(items),
            let jsonString = String(data: jsonData, encoding: .utf8) {
-            let js = "if (window.loadWallpapers) { window.loadWallpapers(\(jsonString), '\(currentPath)'); }"
+            let themeJs = "{ accent: '#\(theme.accentHex)', island: '#\(theme.islandHex)', text: '#\(theme.textWhiteHex)' }"
+            let js = "if (window.loadWallpapers) { window.loadWallpapers(\(jsonString), '\(currentPath)', \(themeJs)); }"
             webView.evaluateJavaScript(js, completionHandler: nil)
         }
     }
@@ -897,6 +918,9 @@ class GalleryWindow: NSPanel, WKScriptMessageHandler, WKNavigationDelegate {
         makeFirstResponder(webView)
         NSApp.activate(ignoringOtherApps: true)
 
+        if let theme = AppDelegate.shared?.currentTheme {
+            updateTheme(theme)
+        }
         injectWallpapers()
         webView.evaluateJavaScript("window.focus();", completionHandler: nil)
 
@@ -926,6 +950,11 @@ class GalleryWindow: NSPanel, WKScriptMessageHandler, WKNavigationDelegate {
         NSApp.setActivationPolicy(.accessory)
         onClose?()
 
+        // Revert gallery theme back to currently active desktop wallpaper theme
+        if let theme = AppDelegate.shared?.currentTheme {
+            updateTheme(theme)
+        }
+
         // Restore desktop bottom pill check
         AppDelegate.shared?.checkDesktopState()
     }
@@ -938,8 +967,18 @@ class GalleryWindow: NSPanel, WKScriptMessageHandler, WKNavigationDelegate {
 
         if action == "ready" {
             isHTMLLoaded = true
+            if let theme = AppDelegate.shared?.currentTheme {
+                updateTheme(theme)
+            }
             if isVisible && alphaValue > 0.5 {
                 injectWallpapers()
+            }
+        } else if action == "previewTheme" {
+            let path = body["path"] as? String ?? ""
+            let name = body["name"] as? String ?? ""
+            if !path.isEmpty {
+                let theme = ThemeExtractor.extract(from: path, name: name)
+                updateTheme(theme)
             }
         } else if action == "apply" || action == "select" {
             let path = body["path"] as? String ?? ""
@@ -960,6 +999,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     var pillWindow: BottomPillWindow!
     var galleryWindow: GalleryWindow!
+    var currentTheme: ThemeColors = ThemeExtractor.aronaTheme
     var stateTimer: Timer?
     var sig1Source: DispatchSourceSignal?
     var sig2Source: DispatchSourceSignal?
@@ -1071,8 +1111,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let currentName = WallpaperScanner.currentWallpaperName()
         if !currentPath.isEmpty {
             let theme = ThemeExtractor.extract(from: currentPath, name: currentName)
+            self.currentTheme = theme
             pillWindow.updateColors(accent: theme.accentNSColor, island: theme.islandNSColor)
+            pillWindow.updatePill(title: currentName)
             ThemeExtractor.applyTheme(theme)
+            galleryWindow.updateTheme(theme)
         }
 
         // Listen for IPC Notifications (e.g. from hotkeys / skhd)
@@ -1180,6 +1223,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Dynamic theme extraction & Sketchybar reload
         let theme = ThemeExtractor.extract(from: path, name: name)
+        self.currentTheme = theme
         ThemeExtractor.applyTheme(theme)
 
         // Update bottom pill colors
@@ -1187,8 +1231,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         pillWindow.updatePill(title: name)
 
         // Update gallery CSS variables in real time
-        let js = "if (window.setTheme) { window.setTheme('#\(theme.accentHex)', '#\(theme.islandHex)', '#\(theme.textWhiteHex)'); }"
-        galleryWindow.webView.evaluateJavaScript(js, completionHandler: nil)
+        galleryWindow.updateTheme(theme)
     }
 }
 

@@ -423,18 +423,48 @@
     const searchInput = document.getElementById("searchInput");
     const searchClear = document.getElementById("searchClear");
 
+    let previewTimer = null;
+
+    function hexToRgba(hex, alpha) {
+      if (!hex) return "";
+      hex = hex.replace("#", "").trim();
+      if (hex.length === 3) {
+        hex = hex.split("").map(c => c + c).join("");
+      }
+      const num = parseInt(hex, 16);
+      if (isNaN(num)) return hex;
+      const r = (num >> 16) & 255;
+      const g = (num >> 8) & 255;
+      const b = num & 255;
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+
     // Dynamic Theme Color Adjustment
     window.setTheme = function(accentHex, islandHex, textHex) {
-      if (accentHex) {
-        document.documentElement.style.setProperty("--accent", accentHex);
-        document.documentElement.style.setProperty("--accent-alpha", accentHex + "44");
-        document.documentElement.style.setProperty("--accent-glow", accentHex + "88");
+      if (!accentHex) return;
+      const cleanAccent = accentHex.startsWith("#") ? accentHex : "#" + accentHex;
+      const cleanIsland = (islandHex && islandHex.startsWith("#")) ? islandHex : (islandHex ? "#" + islandHex : "#14172f");
+      const cleanText   = (textHex && textHex.startsWith("#")) ? textHex : (textHex ? "#" + textHex : "#f0edfc");
+
+      document.documentElement.style.setProperty("--accent", cleanAccent);
+      document.documentElement.style.setProperty("--accent-alpha", hexToRgba(cleanAccent, 0.35));
+      document.documentElement.style.setProperty("--accent-glow", hexToRgba(cleanAccent, 0.60));
+      document.documentElement.style.setProperty("--island-bg", hexToRgba(cleanIsland, 0.92));
+      document.documentElement.style.setProperty("--text-main", cleanText);
+
+      // Force immediate update on active card and controls
+      const activeCard = document.querySelector(".card.active");
+      if (activeCard) {
+        activeCard.style.borderColor = cleanAccent;
+        activeCard.style.boxShadow = `0 0 35px ${hexToRgba(cleanAccent, 0.60)}, 0 22px 55px rgba(0, 0, 0, 0.85)`;
       }
-      if (islandHex) {
-        document.documentElement.style.setProperty("--island-bg", islandHex + "ea");
-      }
-      if (textHex) {
-        document.documentElement.style.setProperty("--text-main", textHex);
+      const title = document.getElementById("title");
+      if (title) title.style.color = cleanAccent;
+
+      const applyBtn = document.getElementById("applyBtn");
+      if (applyBtn && !applyBtn.classList.contains("applied")) {
+        applyBtn.style.borderColor = cleanAccent;
+        applyBtn.style.background = hexToRgba(cleanAccent, 0.35);
       }
     };
 
@@ -564,6 +594,17 @@
         titleEl.innerText = current.name;
         folderTagEl.innerText = current.category || "wallpapers";
         indexTagEl.innerText = `${currentIndex + 1} / ${total}`;
+
+        clearTimeout(previewTimer);
+        previewTimer = setTimeout(() => {
+          if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.bridge) {
+            window.webkit.messageHandlers.bridge.postMessage({
+              action: "previewTheme",
+              path: current.path,
+              name: current.name
+            });
+          }
+        }, 80);
       }
     }
 
@@ -702,13 +743,16 @@
     });
 
     // Bridge function called from Swift
-    window.loadWallpapers = function(items, activePath) {
+    window.loadWallpapers = function(items, activePath, theme) {
       allWallpapers = items || [];
       filteredWallpapers = allWallpapers;
       currentIndex = 0;
       if (activePath) {
         const found = allWallpapers.findIndex(w => w.path === activePath || activePath.endsWith(w.name));
         if (found !== -1) currentIndex = found;
+      }
+      if (theme) {
+        window.setTheme(theme.accent, theme.island, theme.text);
       }
       applyFilter();
     };

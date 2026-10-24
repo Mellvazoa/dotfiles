@@ -12,10 +12,12 @@ $(TARGET): $(SRC)
 	@echo "Build complete: $(TARGET)"
 
 install: $(TARGET)
-	@mkdir -p ~/bin ~/.local/bin 2>/dev/null || true
+	@mkdir -p ~/bin ~/.local/bin ~/.config/yabai/bin 2>/dev/null || true
 	cp $(TARGET) ~/.local/bin/wallpaper_gallery 2>/dev/null || cp $(TARGET) ~/bin/wallpaper_gallery
+	cp $(TARGET) ~/.config/yabai/bin/wallpaper_gallery 2>/dev/null || true
 	cp gallery.html ~/.local/bin/gallery.html 2>/dev/null || true
 	cp gallery.html ~/bin/gallery.html 2>/dev/null || true
+	cp gallery.html ~/.config/yabai/bin/gallery.html 2>/dev/null || true
 
 clean:
 	rm -rf bin/
