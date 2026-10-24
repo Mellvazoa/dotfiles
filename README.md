@@ -1,169 +1,114 @@
-# 🌸 Arona Soft Lavender — macOS Rice & Dotfiles
+# dotfiles
 
-> A clean, aesthetic, and functional tiling desktop setup for **macOS (Apple Silicon)**, themed around a harmonious **Soft Lavender & Blue Archive Arona** palette. Designed with notch awareness for MacBook Air and Pro displays.
+My macOS setup. Tiling with yabai, a custom sketchybar, kitty, and a lavender color scheme loosely based on Arona from Blue Archive (yes, really).
 
-![Desktop Preview](assets/desktop.png)
+Runs on a MacBook Air M3 13". Should work on other Apple Silicon Macs too, but the notch stuff is tuned for my screen, so you'll probably need to tweak a couple of numbers.
 
----
+![desktop](assets/desktop.png)
 
-## 📑 Table of Contents
-- [✨ Features](#-features)
-- [📦 Components](#-components)
-- [⌨️ Keybindings (skhd)](#️-keybindings-skhd)
-- [🛠️ Requirements & Dependencies](#️-requirements--dependencies)
-- [🚀 Installation](#-installation)
-- [🎨 Color Palette](#-color-palette)
-- [📐 Notch Handling](#-notch-handling)
+## What's in here
 
----
+- `sketchybar/` — the bar. Configured in Lua, with a few small C helpers for CPU/RAM/network stats. Each group of items is its own floating "pill". There's a cava audio visualizer, a CPU graph (click it to see per-core load), RAM, Wi-Fi speed + IP, weather, and the usual stuff.
+- `yabai/` — tiling config. BSP layout, some rules for dialogs and windows that shouldn't tile, plus a couple of scripts (one of them toggles float in a smarter way for apps that open lots of windows).
+- `skhd/` — hotkeys, see below.
+- `kitty/` — terminal. 85% opacity with blur, JetBrains Mono Nerd Font, powerline tabs, my own color theme.
+- `rofi/` — not actual rofi (that's Linux only). It's a small Python launcher I wrote for apps and folders I open often.
+- `square_corners/` — an Objective-C tweak that gets rid of rounded window corners. Needs Ammonia or some other DYLD injection thing. Kind of experimental, use at your own risk.
+- `wallpapers/` — the wallpaper from the screenshot.
 
-## ✨ Features
+## Keybinds
 
-- **Dynamic Island Bar (SketchyBar):** Floating pills with soft purple border glow, dynamic spaces, audio visualizer (Cava), CPU graph with per-core usage popups, RAM monitor, Wi-Fi speed & IP info, weather forecast, and system stats.
-- **MacBook Notch Adaptation:** Notch-aware application menu bar that automatically splits across the MacBook display notch, keeping the layout perfectly symmetrical and clean.
-- **Fluid Tiling Window Management (Yabai):** Fast BSP auto-tiling with smart float toggling for multi-window applications, custom rules for dialogs, and smooth window animations.
-- **Translucent Terminal (Kitty):** 85% opacity with 30px frosted glass blur, JetBrains Mono Nerd Font, powerline tabs, and custom Arona color scheme.
-- **Rofi-style App & Directory Launcher:** Fast keyboard-driven launcher for macOS apps and frequent directories.
-- **Square Window Corners (SquareCorners tweak):** Objective-C tweak to eliminate rounded corners on macOS windows for an ultra-sharp modern aesthetic.
+Everything is on `Alt` (Option).
 
----
+**Focus**
 
-## 📦 Components
-
-| Component | Path | Description |
-| :--- | :--- | :--- |
-| **SketchyBar** | [`sketchybar/`](sketchybar/) | Lua-configured status bar with custom widgets & C helpers |
-| **Kitty** | [`kitty/`](kitty/) | Fast GPU-accelerated terminal with blur & custom theme |
-| **Yabai** | [`yabai/`](yabai/) | Tiling window manager config, rules, and scripts |
-| **Skhd** | [`skhd/`](skhd/) | Keyboard hotkey daemon configuration |
-| **Rofi Launcher** | [`rofi/`](rofi/) | Python-based quick application & folder launcher |
-| **SquareCorners** | [`square_corners/`](square_corners/) | Ammonia DYLD injection tweak for square window corners |
-| **Wallpapers** | [`wallpapers/`](wallpapers/) | High-resolution desktop wallpapers |
-
----
-
-## ⌨️ Keybindings (skhd)
-
-The setup uses `Option` (`Alt`) as the primary modifier key.
-
-### 🧭 Window Focus & Navigation
-| Shortcut | Action |
+| Keys | What it does |
 | :--- | :--- |
-| <kbd>Alt</kbd> + <kbd>H</kbd> | Focus window to the **west** (left) |
-| <kbd>Alt</kbd> + <kbd>J</kbd> | Focus window to the **south** (down) |
-| <kbd>Alt</kbd> + <kbd>K</kbd> | Focus window to the **north** (up) |
-| <kbd>Alt</kbd> + <kbd>L</kbd> | Focus window to the **east** (right) |
+| <kbd>Alt</kbd> + <kbd>H</kbd> <kbd>J</kbd> <kbd>K</kbd> <kbd>L</kbd> | focus left / down / up / right |
 
-### 🔀 Window Moving & Layout
-| Shortcut | Action |
+**Moving windows around**
+
+| Keys | What it does |
 | :--- | :--- |
-| <kbd>Shift</kbd> + <kbd>Alt</kbd> + <kbd>H</kbd> / <kbd>J</kbd> / <kbd>K</kbd> / <kbd>L</kbd> | **Warp** window (insert into split in that direction) |
-| <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>H</kbd> / <kbd>J</kbd> / <kbd>K</kbd> / <kbd>L</kbd> | **Swap** active window with neighbor |
-| <kbd>Alt</kbd> + <kbd>B</kbd> | **Balance** all window sizes in the space |
-| <kbd>Alt</kbd> + <kbd>R</kbd> | **Rotate** layout tree by 90° |
-| <kbd>Alt</kbd> + <kbd>E</kbd> | Toggle vertical / horizontal **split** orientation |
-| <kbd>Alt</kbd> + <kbd>M</kbd> | Mirror space layout on Y-axis |
-| <kbd>Shift</kbd> + <kbd>Alt</kbd> + <kbd>M</kbd> | Mirror space layout on X-axis |
+| <kbd>Shift</kbd> + <kbd>Alt</kbd> + <kbd>H</kbd> <kbd>J</kbd> <kbd>K</kbd> <kbd>L</kbd> | warp window in that direction |
+| <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>H</kbd> <kbd>J</kbd> <kbd>K</kbd> <kbd>L</kbd> | swap with the neighbor |
+| <kbd>Alt</kbd> + <kbd>B</kbd> | balance window sizes |
+| <kbd>Alt</kbd> + <kbd>R</kbd> | rotate layout 90° |
+| <kbd>Alt</kbd> + <kbd>E</kbd> | toggle split direction |
+| <kbd>Alt</kbd> + <kbd>M</kbd> | mirror on Y axis |
+| <kbd>Shift</kbd> + <kbd>Alt</kbd> + <kbd>M</kbd> | mirror on X axis |
 
-### 🪟 Window State & Resizing
-| Shortcut | Action |
+**Window state**
+
+| Keys | What it does |
 | :--- | :--- |
-| <kbd>Alt</kbd> + <kbd>Space</kbd> | **Smart Toggle Float** (floating mode for active window) |
-| <kbd>Alt</kbd> + <kbd>F</kbd> | Toggle fullscreen zoom |
-| <kbd>Alt</kbd> + <kbd>W</kbd> | Close active window |
-| <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>Arrow Left/Right</kbd> | Resize window width |
-| <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>Arrow Up/Down</kbd> | Resize window height |
+| <kbd>Alt</kbd> + <kbd>Space</kbd> | toggle float |
+| <kbd>Alt</kbd> + <kbd>F</kbd> | fullscreen zoom |
+| <kbd>Alt</kbd> + <kbd>W</kbd> | close window |
+| <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>←</kbd> <kbd>→</kbd> | resize width |
+| <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>↑</kbd> <kbd>↓</kbd> | resize height |
 
-### 🚀 Applications & Workspaces
-| Shortcut | Action |
+**Apps & spaces**
+
+| Keys | What it does |
 | :--- | :--- |
-| <kbd>Alt</kbd> + <kbd>Enter</kbd> | Open new **Kitty** terminal window |
-| <kbd>Cmd</kbd> + <kbd>Space</kbd> or <kbd>Alt</kbd> + <kbd>D</kbd> | Open **Application Launcher** |
-| <kbd>Alt</kbd> + <kbd>1</kbd> .. <kbd>4</kbd> | Switch to workspace (Space) 1, 2, 3, or 4 |
+| <kbd>Alt</kbd> + <kbd>Enter</kbd> | new kitty window |
+| <kbd>Cmd</kbd> + <kbd>Space</kbd> or <kbd>Alt</kbd> + <kbd>D</kbd> | launcher |
+| <kbd>Alt</kbd> + <kbd>1</kbd>…<kbd>4</kbd> | go to space 1–4 |
 
----
+## Installing
 
-## 🛠️ Requirements & Dependencies
-
-### Core Utilities
-Install the required packages via [Homebrew](https://brew.sh):
+You'll need [Homebrew](https://brew.sh) first. Then:
 
 ```bash
-# Tiling Window Manager & Hotkey Daemon
-brew install koekeishiya/formulae/yabai
-brew install koekeishiya/formulae/skhd
+brew install koekeishiya/formulae/yabai koekeishiya/formulae/skhd
+brew install felixkratz/formulae/sketchybar cava jq
+brew install --cask kitty font-jetbrains-mono-nerd-font
 
-# Status Bar & Audio Visualizer
-brew install felixkratz/formulae/sketchybar
-brew install cava
-brew install jq
-
-# Terminal
-brew install --cask kitty
-```
-
-### Fonts
-The rice requires **JetBrainsMono Nerd Font** and **sketchybar-app-font** for icons:
-
-```bash
-brew install --cask font-jetbrains-mono-nerd-font
-
-# Sketchybar app font
-curl -s https://github.com/kvndrsslr/sketchybar-app-font/releases/latest/download/sketchybar-app-font.ttf \
+# icon font for sketchybar
+curl -L https://github.com/kvndrsslr/sketchybar-app-font/releases/latest/download/sketchybar-app-font.ttf \
   -o ~/Library/Fonts/sketchybar-app-font.ttf
 ```
 
----
+Then clone the repo and run the script:
 
-## 🚀 Installation
+```bash
+git clone https://github.com/Mellvazoa/dotfiles.git ~/dotfiles
+cd ~/dotfiles
+./install.sh
+```
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/Mellvazoa/dotfiles.git ~/dotfiles
-   cd ~/dotfiles
-   ```
+The script just symlinks the folders into `~/.config/` and builds the sketchybar helpers. If you already have configs there, it won't delete them — it renames them to `*.bak.<timestamp>`.
 
-2. **Run the installation script:**
-   ```bash
-   chmod +x install.sh
-   ./install.sh
-   ```
-   *The script creates symlinks into `~/.config/` and automatically compiles the SketchyBar C helper binaries.*
+After that, restart everything:
 
-3. **Start or reload background services:**
-   ```bash
-   yabai --restart-service
-   skhd --restart-service
-   sketchybar --reload
-   ```
+```bash
+yabai --restart-service
+skhd --restart-service
+sketchybar --reload
+```
 
-4. *(Optional)* **Build SquareCorners tweak:**
-   If you use Ammonia or another DYLD injection manager for square corners:
-   ```bash
-   cd square_corners
-   make
-   sudo make install
-   ```
+If you want the square corners too (needs Ammonia or similar):
 
----
+```bash
+cd square_corners
+make
+sudo make install
+```
 
-## 🎨 Color Palette
+## Colors
 
-| Token | Hex | Role |
+| | Hex | Used for |
 | :--- | :--- | :--- |
-| **Accent / Lavender** | `#c8b4fa` | Active borders, highlights, tab selection, cursor |
-| **Background / Dark Navy** | `#14172f` | Terminal & popup background |
-| **Bar Island Background** | `#131630` (`85%`) | Sketchybar floating pills |
-| **Foreground / Soft White** | `#f0edfc` | Text and icons |
-| **Halo Cyan** | `#8ae1e8` | Accent highlights & info indicators |
-| **Soft Pink** | `#fc7a95` | Warnings & battery alerts |
+| lavender | `#c8b4fa` | accent, borders, active tab, cursor |
+| dark navy | `#14172f` | terminal and popup background |
+| bar background | `#131630` @ 85% | sketchybar pills |
+| off-white | `#f0edfc` | text, icons |
+| cyan | `#8ae1e8` | secondary accent |
+| pink | `#fc7a95` | warnings, low battery |
 
----
+## About the notch
 
-## 📐 Notch Handling
+The app menu in sketchybar gets split into two halves so nothing ends up hidden behind the notch. On my Air the notch goes from about x=646 to x=825, so the first 9 menu items (App through Window) sit to the left of it, and everything from Help onward goes to the right. If an app doesn't have that many menu items (like Finder), the right half just doesn't show up.
 
-On MacBook models with camera notches (like the MacBook Air M3 13", where the notch spans from $X = 646\text{px}$ to $825\text{px}$):
-- SketchyBar's menu bar is split dynamically into two brackets:
-  - **Left island:** items 1–9 (`App` through `Window`) snug against the left edge of the notch ($X = 646\text{px}$).
-  - **Right island:** items 10+ (`Help`, etc.) starting immediately at the right edge of the notch ($X = 825\text{px}$).
-- For applications with fewer items (e.g., Finder), the right island and spacer are automatically hidden.
+If your Mac has a different screen size, these numbers are what you'll need to change.
