@@ -4,6 +4,14 @@
   <meta charset="UTF-8">
   <title>Wallpaper Gallery</title>
   <style>
+    :root {
+      --accent: #c8b4fa;
+      --accent-alpha: rgba(200, 180, 250, 0.35);
+      --accent-glow: rgba(200, 180, 250, 0.55);
+      --island-bg: rgba(19, 22, 48, 0.92);
+      --text-main: #f0edfc;
+    }
+
     * {
       box-sizing: border-box;
       margin: 0;
@@ -24,39 +32,113 @@
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      color: #f0edfc;
+      color: var(--text-main);
     }
 
-    .top-badge {
+    /* Top Search & Filter Bar (Positioned at 60px to clear Sketchybar safely) */
+    .search-container {
       position: absolute;
-      top: 36px;
-      padding: 8px 20px;
-      background: rgba(19, 22, 48, 0.90);
-      border: 1px solid rgba(200, 180, 250, 0.35);
-      border-radius: 20px;
-      font-size: 12px;
-      letter-spacing: 1.5px;
-      color: #c8b4fa;
-      text-transform: uppercase;
-      font-weight: 700;
+      top: 60px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      z-index: 1000;
+    }
+
+    .search-box {
       display: flex;
       align-items: center;
       gap: 10px;
+      background: var(--island-bg);
+      border: 1px solid var(--accent-alpha);
+      border-radius: 20px;
+      padding: 8px 18px;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
+      transition: all 0.25s cubic-bezier(0.2, 0.9, 0.3, 1);
+      width: 320px;
     }
 
+    .search-box:focus-within {
+      border-color: var(--accent);
+      box-shadow: 0 0 25px var(--accent-alpha), 0 12px 35px rgba(0, 0, 0, 0.7);
+      width: 390px;
+    }
+
+    .search-icon {
+      color: var(--accent);
+      font-size: 15px;
+      display: flex;
+      align-items: center;
+    }
+
+    #searchInput {
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text-main);
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      width: 100%;
+      user-select: text;
+      -webkit-user-select: text;
+    }
+
+    #searchInput::placeholder {
+      color: rgba(240, 237, 252, 0.45);
+      font-weight: 400;
+    }
+
+    .search-clear {
+      background: transparent;
+      border: none;
+      color: var(--accent);
+      font-size: 13px;
+      cursor: pointer;
+      display: none;
+      padding: 0 4px;
+      border-radius: 50%;
+      transition: transform 0.15s ease;
+    }
+
+    .search-clear:hover {
+      transform: scale(1.2);
+    }
+
+    .search-clear.visible {
+      display: block;
+    }
+
+    .count-badge {
+      background: var(--island-bg);
+      border: 1px solid var(--accent-alpha);
+      border-radius: 20px;
+      padding: 8px 18px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      letter-spacing: 0.8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Close Button (Positioned at top: 60px, clears bar) */
     .close-btn {
       position: absolute;
-      top: 36px;
+      top: 60px;
       right: 48px;
-      width: 36px;
-      height: 36px;
-      background: rgba(19, 22, 48, 0.90);
-      border: 1px solid rgba(200, 180, 250, 0.35);
+      width: 38px;
+      height: 38px;
+      background: var(--island-bg);
+      border: 1px solid var(--accent-alpha);
       border-radius: 50%;
-      color: #c8b4fa;
+      color: var(--accent);
       font-size: 15px;
       display: flex;
       align-items: center;
@@ -66,22 +148,23 @@
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
+      z-index: 1000;
     }
 
     .close-btn:hover {
-      background: #c8b4fa;
+      background: var(--accent);
       color: #14172f;
       transform: scale(1.1);
-      box-shadow: 0 0 20px rgba(200, 180, 250, 0.6);
+      box-shadow: 0 0 22px var(--accent-glow);
     }
 
     .toast {
       position: absolute;
-      top: 90px;
+      top: 116px;
       background: rgba(20, 23, 47, 0.94);
       border: 1px solid #a6e3a1;
       color: #a6e3a1;
-      padding: 8px 22px;
+      padding: 8px 24px;
       border-radius: 20px;
       font-size: 12px;
       font-weight: 700;
@@ -127,7 +210,7 @@
       overflow: hidden;
       cursor: pointer;
       box-shadow: 0 16px 36px rgba(0, 0, 0, 0.65);
-      border: 1px solid rgba(200, 180, 250, 0.25);
+      border: 1px solid var(--accent-alpha);
       transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1),
                   opacity 0.35s ease,
                   filter 0.35s ease,
@@ -146,8 +229,8 @@
     }
 
     .card.active {
-      border: 2.5px solid #c8b4fa;
-      box-shadow: 0 0 35px rgba(200, 180, 250, 0.55), 0 22px 55px rgba(0, 0, 0, 0.85);
+      border: 2.5px solid var(--accent);
+      box-shadow: 0 0 35px var(--accent-glow), 0 22px 55px rgba(0, 0, 0, 0.85);
       cursor: pointer;
       z-index: 100;
     }
@@ -158,9 +241,9 @@
       bottom: 14px;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(19, 22, 48, 0.92);
-      border: 1px solid #c8b4fa;
-      color: #c8b4fa;
+      background: var(--island-bg);
+      border: 1px solid var(--accent);
+      color: var(--accent);
       padding: 5px 14px;
       border-radius: 12px;
       font-size: 11px;
@@ -172,22 +255,23 @@
     }
 
     .card.active:hover::after {
-      background: #c8b4fa;
+      background: var(--accent);
       color: #14172f;
       transform: translateX(-50%) scale(1.05);
-      box-shadow: 0 0 20px rgba(200, 180, 250, 0.6);
+      box-shadow: 0 0 20px var(--accent-glow);
     }
 
+    /* Bottom Control Bar (Positioned at bottom: 44px for balanced spacing) */
     .bottom-bar {
       position: absolute;
-      bottom: 28px;
+      bottom: 44px;
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 10px;
       text-align: center;
-      background: rgba(19, 22, 48, 0.92);
-      border: 1px solid rgba(200, 180, 250, 0.35);
+      background: var(--island-bg);
+      border: 1px solid var(--accent-alpha);
       border-radius: 18px;
       padding: 12px 32px;
       box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
@@ -198,9 +282,9 @@
     .wallpaper-title {
       font-size: 16px;
       font-weight: 700;
-      color: #c8b4fa;
+      color: var(--accent);
       letter-spacing: 0.5px;
-      text-shadow: 0 2px 10px rgba(200, 180, 250, 0.3);
+      text-shadow: 0 2px 10px var(--accent-alpha);
       max-width: 600px;
       white-space: nowrap;
       overflow: hidden;
@@ -216,8 +300,8 @@
     }
 
     .tag {
-      background: rgba(200, 180, 250, 0.15);
-      color: #c8b4fa;
+      background: var(--accent-alpha);
+      color: var(--accent);
       padding: 3px 10px;
       border-radius: 8px;
       font-size: 11px;
@@ -228,9 +312,9 @@
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      background: rgba(200, 180, 250, 0.18);
-      border: 1px solid #c8b4fa;
-      color: #f0edfc;
+      background: var(--accent-alpha);
+      border: 1px solid var(--accent);
+      color: var(--text-main);
       padding: 6px 22px;
       border-radius: 10px;
       font-family: inherit;
@@ -239,21 +323,21 @@
       letter-spacing: 0.8px;
       cursor: pointer;
       transition: all 0.2s cubic-bezier(0.2, 0.9, 0.3, 1);
-      box-shadow: 0 4px 15px rgba(200, 180, 250, 0.2);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
     }
 
     .apply-btn:hover {
-      background: #c8b4fa;
+      background: var(--accent);
       color: #14172f;
       transform: translateY(-1px);
-      box-shadow: 0 6px 25px rgba(200, 180, 250, 0.5);
+      box-shadow: 0 6px 25px var(--accent-glow);
     }
 
     .apply-btn.applied {
-      background: #a6e3a1;
-      border-color: #a6e3a1;
-      color: #14172f;
-      box-shadow: 0 0 25px rgba(166, 227, 161, 0.6);
+      background: #a6e3a1 !important;
+      border-color: #a6e3a1 !important;
+      color: #14172f !important;
+      box-shadow: 0 0 25px rgba(166, 227, 161, 0.6) !important;
       transform: scale(1.03);
     }
 
@@ -262,7 +346,7 @@
       font-size: 11px;
       color: rgba(240, 237, 252, 0.55);
       display: flex;
-      gap: 16px;
+      gap: 14px;
     }
 
     .shortcuts-hint kbd {
@@ -273,11 +357,27 @@
       font-size: 10px;
       color: #f0edfc;
     }
+
+    .no-results {
+      font-size: 16px;
+      font-weight: 600;
+      color: rgba(240, 237, 252, 0.6);
+      display: none;
+      position: absolute;
+    }
   </style>
 </head>
 <body id="bg">
-  <div class="top-badge">
-    <span>󰸉</span> Wallpaper Gallery (<span id="count">0</span>)
+  <!-- Search & Counter Bar -->
+  <div class="search-container">
+    <div class="search-box">
+      <span class="search-icon">󰍉</span>
+      <input type="text" id="searchInput" placeholder="Search wallpapers... (/)" autocomplete="off" spellcheck="false">
+      <button class="search-clear" id="searchClear" title="Clear search">✕</button>
+    </div>
+    <div class="count-badge">
+      <span>󰸉</span> <span id="filteredCount">0</span> / <span id="totalCount">0</span>
+    </div>
   </div>
 
   <div class="toast" id="toast">✓ Applied in Real Time</div>
@@ -286,6 +386,7 @@
 
   <div class="stage" id="stage">
     <div class="carousel" id="carousel"></div>
+    <div class="no-results" id="noResults">No wallpapers found</div>
   </div>
 
   <div class="bottom-bar">
@@ -299,25 +400,94 @@
     </button>
     <div class="shortcuts-hint">
       <span><kbd>←</kbd> <kbd>→</kbd> Navigate</span>
+      <span><kbd>/</kbd> Search</span>
       <span><kbd>⏎</kbd> Apply</span>
       <span><kbd>⎋ Esc</kbd> Close</span>
     </div>
   </div>
 
   <script>
-    let wallpapers = [];
+    let allWallpapers = [];
+    let filteredWallpapers = [];
     let currentIndex = 0;
     let isWheeling = false;
+    let searchQuery = "";
 
     const carousel = document.getElementById("carousel");
+    const noResultsEl = document.getElementById("noResults");
     const titleEl = document.getElementById("title");
     const folderTagEl = document.getElementById("folderTag");
     const indexTagEl = document.getElementById("indexTag");
-    const countEl = document.getElementById("count");
+    const filteredCountEl = document.getElementById("filteredCount");
+    const totalCountEl = document.getElementById("totalCount");
+    const searchInput = document.getElementById("searchInput");
+    const searchClear = document.getElementById("searchClear");
+
+    // Dynamic Theme Color Adjustment
+    window.setTheme = function(accentHex, islandHex, textHex) {
+      if (accentHex) {
+        document.documentElement.style.setProperty("--accent", accentHex);
+        document.documentElement.style.setProperty("--accent-alpha", accentHex + "44");
+        document.documentElement.style.setProperty("--accent-glow", accentHex + "88");
+      }
+      if (islandHex) {
+        document.documentElement.style.setProperty("--island-bg", islandHex + "ea");
+      }
+      if (textHex) {
+        document.documentElement.style.setProperty("--text-main", textHex);
+      }
+    };
+
+    // Search Input listeners
+    searchInput.addEventListener("input", () => {
+      searchQuery = searchInput.value;
+      searchClear.classList.toggle("visible", searchQuery.length > 0);
+      applyFilter();
+    });
+
+    searchClear.addEventListener("click", () => {
+      searchInput.value = "";
+      searchQuery = "";
+      searchClear.classList.remove("visible");
+      applyFilter();
+      searchInput.focus();
+    });
+
+    function applyFilter() {
+      const q = searchQuery.toLowerCase().trim();
+      if (q === "") {
+        filteredWallpapers = allWallpapers;
+      } else {
+        filteredWallpapers = allWallpapers.filter(w => 
+          w.name.toLowerCase().includes(q) || 
+          (w.category && w.category.toLowerCase().includes(q))
+        );
+      }
+
+      filteredCountEl.innerText = filteredWallpapers.length;
+      totalCountEl.innerText = allWallpapers.length;
+
+      if (currentIndex >= filteredWallpapers.length) {
+        currentIndex = Math.max(0, filteredWallpapers.length - 1);
+      }
+
+      renderCards();
+    }
 
     function renderCards() {
       carousel.innerHTML = "";
-      wallpapers.forEach((wp, idx) => {
+      
+      if (filteredWallpapers.length === 0) {
+        noResultsEl.style.display = "block";
+        titleEl.innerText = "No matching wallpapers";
+        folderTagEl.innerText = "search";
+        indexTagEl.innerText = "0 / 0";
+        return;
+      }
+
+      noResultsEl.style.display = "none";
+
+      filteredWallpapers.forEach((wp, idx) => {
         const card = document.createElement("div");
         card.className = "card";
         card.id = "card-" + idx;
@@ -343,14 +513,12 @@
     }
 
     function updateLayout() {
-      if (wallpapers.length === 0) return;
+      if (filteredWallpapers.length === 0) return;
 
-      const total = wallpapers.length;
-      countEl.innerText = total;
-
+      const total = filteredWallpapers.length;
       const maxVisible = 7; // items visible on each side
 
-      wallpapers.forEach((_, idx) => {
+      filteredWallpapers.forEach((_, idx) => {
         const card = document.getElementById("card-" + idx);
         if (!card) return;
 
@@ -391,7 +559,7 @@
         }
       });
 
-      const current = wallpapers[currentIndex];
+      const current = filteredWallpapers[currentIndex];
       if (current) {
         titleEl.innerText = current.name;
         folderTagEl.innerText = current.category || "wallpapers";
@@ -400,9 +568,9 @@
     }
 
     function setIndex(index) {
-      if (wallpapers.length === 0) return;
-      if (index < 0) index = wallpapers.length - 1;
-      if (index >= wallpapers.length) index = 0;
+      if (filteredWallpapers.length === 0) return;
+      if (index < 0) index = filteredWallpapers.length - 1;
+      if (index >= filteredWallpapers.length) index = 0;
       currentIndex = index;
       updateLayout();
     }
@@ -426,8 +594,8 @@
     }
 
     function selectCurrent() {
-      if (wallpapers.length === 0) return;
-      const current = wallpapers[currentIndex];
+      if (filteredWallpapers.length === 0) return;
+      const current = filteredWallpapers[currentIndex];
       
       const btn = document.getElementById("applyBtn");
       if (btn) {
@@ -465,31 +633,43 @@
     window.selectCurrent = selectCurrent;
     window.closeGallery = closeGallery;
 
-    // Keyboard navigation inside WebKit
+    // Keyboard navigation
     window.addEventListener("keydown", (e) => {
-      const isLeft = e.key === "ArrowLeft" || e.code === "ArrowLeft" || e.keyCode === 37 || e.code === "KeyH";
-      const isRight = e.key === "ArrowRight" || e.code === "ArrowRight" || e.keyCode === 39 || e.code === "KeyL";
-      const isUp = e.key === "ArrowUp" || e.code === "ArrowUp" || e.keyCode === 38 || e.code === "KeyK";
-      const isDown = e.key === "ArrowDown" || e.code === "ArrowDown" || e.keyCode === 40 || e.code === "KeyJ";
-      const isEnter = e.key === "Enter" || e.code === "Enter" || e.keyCode === 13 || e.key === " " || e.code === "Space" || e.keyCode === 32;
+      const inSearch = document.activeElement === searchInput;
+
+      if (e.key === "/" && !inSearch) {
+        e.preventDefault();
+        searchInput.focus();
+        searchInput.select();
+        return;
+      }
+
+      const isLeft = e.key === "ArrowLeft" || e.code === "ArrowLeft" || e.keyCode === 37 || (!inSearch && e.code === "KeyH");
+      const isRight = e.key === "ArrowRight" || e.code === "ArrowRight" || e.keyCode === 39 || (!inSearch && e.code === "KeyL");
+      const isUp = e.key === "ArrowUp" || e.code === "ArrowUp" || e.keyCode === 38 || (!inSearch && e.code === "KeyK");
+      const isDown = e.key === "ArrowDown" || e.code === "ArrowDown" || e.keyCode === 40 || (!inSearch && e.code === "KeyJ");
+      const isEnter = e.key === "Enter" || e.code === "Enter" || e.keyCode === 13 || (!inSearch && (e.key === " " || e.code === "Space" || e.keyCode === 32));
       const isEscape = e.key === "Escape" || e.code === "Escape" || e.keyCode === 27;
 
       if (isLeft || isUp) {
         e.preventDefault();
-        e.stopPropagation();
         prev();
       } else if (isRight || isDown) {
         e.preventDefault();
-        e.stopPropagation();
         next();
       } else if (isEnter) {
         e.preventDefault();
-        e.stopPropagation();
         selectCurrent();
       } else if (isEscape) {
         e.preventDefault();
-        e.stopPropagation();
-        closeGallery("escape_key");
+        if (inSearch && searchInput.value.length > 0) {
+          searchInput.value = "";
+          searchQuery = "";
+          searchClear.classList.remove("visible");
+          applyFilter();
+        } else {
+          closeGallery("escape_key");
+        }
       }
     });
 
@@ -512,7 +692,9 @@
 
     // Focus on click background
     document.getElementById("bg").addEventListener("click", () => {
-      window.focus();
+      if (document.activeElement !== searchInput) {
+        window.focus();
+      }
     });
 
     document.getElementById("closeBtn").addEventListener("click", () => {
@@ -521,14 +703,14 @@
 
     // Bridge function called from Swift
     window.loadWallpapers = function(items, activePath) {
-      wallpapers = items || [];
+      allWallpapers = items || [];
+      filteredWallpapers = allWallpapers;
       currentIndex = 0;
       if (activePath) {
-        const found = wallpapers.findIndex(w => w.path === activePath || activePath.endsWith(w.name));
+        const found = allWallpapers.findIndex(w => w.path === activePath || activePath.endsWith(w.name));
         if (found !== -1) currentIndex = found;
       }
-      renderCards();
-      window.focus();
+      applyFilter();
     };
 
     // Tell Swift that WebKit is ready

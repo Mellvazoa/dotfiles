@@ -12,6 +12,210 @@ struct WallpaperItem: Codable {
 let kToggleNotification = Notification.Name("com.mellvazoa.wallpaper.toggle")
 let kOpenNotification   = Notification.Name("com.mellvazoa.wallpaper.open")
 
+// ── Theme Extractor (Dynamic Color Adaptation for Sketchybar & Gallery) ──────
+struct ThemeColors {
+    let accentHex: String       // e.g. "fa5f61"
+    let accentLightHex: String  // e.g. "fd8c8e"
+    let accentDimHex: String    // e.g. "d14749"
+    let lilacHex: String        // e.g. "fa7a5f"
+    let islandHex: String       // e.g. "211112"
+    let textWhiteHex: String    // e.g. "f6f2f2"
+    let bg1Hex: String          // e.g. "2d191a"
+    let bg2Hex: String          // e.g. "3f2527"
+    
+    let accentNSColor: NSColor
+    let islandNSColor: NSColor
+}
+
+class ThemeExtractor {
+    // Original signature theme for Arona
+    static let aronaTheme = ThemeColors(
+        accentHex: "c8b4fa",
+        accentLightHex: "e4d2fd",
+        accentDimHex: "aba0f5",
+        lilacHex: "928dfb",
+        islandHex: "131630",
+        textWhiteHex: "f0edfc",
+        bg1Hex: "1c203f",
+        bg2Hex: "292e59",
+        accentNSColor: NSColor(red: 200/255.0, green: 180/255.0, blue: 250/255.0, alpha: 1.0),
+        islandNSColor: NSColor(red: 19/255.0, green: 22/255.0, blue: 48/255.0, alpha: 0.88)
+    )
+
+    static func extract(from path: String, name: String) -> ThemeColors {
+        let lower = name.lowercased()
+        if lower.contains("arona") || lower.contains("arcona") {
+            return aronaTheme
+        }
+
+        guard let img = NSImage(contentsOfFile: path) else {
+            return aronaTheme
+        }
+
+        let size = 48
+        let rep = NSBitmapImageRep(
+            bitmapDataPlanes: nil,
+            pixelsWide: size,
+            pixelsHigh: size,
+            bitsPerSample: 8,
+            samplesPerPixel: 4,
+            hasAlpha: true,
+            isPlanar: false,
+            colorSpaceName: .calibratedRGB,
+            bytesPerRow: size * 4,
+            bitsPerPixel: 32
+        )
+        guard let bitmap = rep else { return aronaTheme }
+
+        NSGraphicsContext.saveGraphicsState()
+        let context = NSGraphicsContext(bitmapImageRep: bitmap)
+        NSGraphicsContext.current = context
+        img.draw(in: NSRect(x: 0, y: 0, width: size, height: size), from: .zero, operation: .copy, fraction: 1.0)
+        NSGraphicsContext.restoreGraphicsState()
+
+        guard let data = bitmap.bitmapData else { return aronaTheme }
+
+        var bestHue: Double = 260.0
+        var bestSat: Double = 0.60
+        var bestScore: Double = -1.0
+
+        for i in 0..<(size * size) {
+            let r = Double(data[i * 4]) / 255.0
+            let g = Double(data[i * 4 + 1]) / 255.0
+            let b = Double(data[i * 4 + 2]) / 255.0
+            let a = Double(data[i * 4 + 3]) / 255.0
+            if a > 0.5 {
+                let maxV = max(r, g, b)
+                let minV = min(r, g, b)
+                let l = (maxV + minV) / 2.0
+                if maxV != minV && l > 0.15 && l < 0.88 {
+                    let d = maxV - minV
+                    let s = l > 0.5 ? d / (2.0 - maxV - minV) : d / (maxV + minV)
+                    if s > 0.15 {
+                        var h: Double = 0
+                        if maxV == r { h = (g - b) / d + (g < b ? 6.0 : 0.0) }
+                        else if maxV == g { h = (b - r) / d + 2.0 }
+                        else { h = (r - g) / d + 4.0 }
+                        h *= 60.0
+
+                        let score = s * 1.6 + (1.0 - abs(l - 0.58))
+                        if score > bestScore {
+                            bestScore = score
+                            bestHue = h
+                            bestSat = s
+                        }
+                    }
+                }
+            }
+        }
+
+        func hslToHex(h: Double, s: Double, l: Double) -> (String, NSColor) {
+            let c = (1.0 - abs(2.0 * l - 1.0)) * s
+            let x = c * (1.0 - abs((h / 60.0).truncatingRemainder(dividingBy: 2.0) - 1.0))
+            let m = l - c / 2.0
+            var r1: Double = 0, g1: Double = 0, b1: Double = 0
+            if h < 60 { r1 = c; g1 = x; b1 = 0 }
+            else if h < 120 { r1 = x; g1 = c; b1 = 0 }
+            else if h < 180 { r1 = 0; g1 = c; b1 = x }
+            else if h < 240 { r1 = 0; g1 = x; b1 = c }
+            else if h < 300 { r1 = x; g1 = 0; b1 = c }
+            else { r1 = c; g1 = 0; b1 = x }
+
+            let rByte = UInt8(clamping: Int((r1 + m) * 255.0))
+            let gByte = UInt8(clamping: Int((g1 + m) * 255.0))
+            let bByte = UInt8(clamping: Int((b1 + m) * 255.0))
+            let hex = String(format: "%02x%02x%02x", rByte, gByte, bByte)
+            let color = NSColor(red: CGFloat(rByte)/255.0, green: CGFloat(gByte)/255.0, blue: CGFloat(bByte)/255.0, alpha: 1.0)
+            return (hex, color)
+        }
+
+        let sat = max(0.55, min(0.92, bestSat))
+        let (accentHex, accentNSColor) = hslToHex(h: bestHue, s: sat, l: 0.76)
+        let (accentLightHex, _)        = hslToHex(h: bestHue, s: sat * 0.9, l: 0.86)
+        let (accentDimHex, _)          = hslToHex(h: bestHue, s: sat, l: 0.62)
+        let (lilacHex, _)              = hslToHex(h: (bestHue + 25.0).truncatingRemainder(dividingBy: 360.0), s: sat, l: 0.72)
+        let (islandHex, islandNSColor) = hslToHex(h: bestHue, s: 0.28, l: 0.10)
+        let (textWhiteHex, _)          = hslToHex(h: bestHue, s: 0.18, l: 0.96)
+        let (bg1Hex, _)                = hslToHex(h: bestHue, s: 0.28, l: 0.14)
+        let (bg2Hex, _)                = hslToHex(h: bestHue, s: 0.28, l: 0.20)
+
+        return ThemeColors(
+            accentHex: accentHex,
+            accentLightHex: accentLightHex,
+            accentDimHex: accentDimHex,
+            lilacHex: lilacHex,
+            islandHex: islandHex,
+            textWhiteHex: textWhiteHex,
+            bg1Hex: bg1Hex,
+            bg2Hex: bg2Hex,
+            accentNSColor: accentNSColor,
+            islandNSColor: islandNSColor
+        )
+    }
+
+    static func applyTheme(_ theme: ThemeColors) {
+        let content = """
+return {
+  black       = 0xff14172f,
+  white       = 0xff\(theme.textWhiteHex),
+  red         = 0xfffc5d7c,
+  green       = 0xffa3e49b,
+  blue        = 0xff9ccdfb,
+  yellow      = 0xfff6df94,
+  orange      = 0xfffca07a,
+  magenta     = 0xff\(theme.accentHex),
+  grey        = 0xff8a8eb5,
+  transparent = 0x00000000,
+
+  -- Dynamic wallpaper palette (accent: #\(theme.accentHex))
+  lavender       = 0xff\(theme.accentHex),
+  lavender_light = 0xff\(theme.accentLightHex),
+  lavender_dim   = 0xff\(theme.accentDimHex),
+  lilac          = 0xff\(theme.lilacHex),
+  arch           = 0xff\(theme.accentHex),
+  arch_dark      = 0xff\(theme.bg2Hex),
+
+  -- Island pill background
+  island         = 0xd9\(theme.islandHex),
+  island_border  = 0x44\(theme.accentHex),
+
+  bar = {
+    bg     = 0x00000000,
+    border = 0x00000000,
+  },
+  popup = {
+    bg     = 0xf2\(theme.islandHex),
+    border = 0x55\(theme.accentHex),
+  },
+  bg1 = 0xff\(theme.bg1Hex),
+  bg2 = 0xff\(theme.bg2Hex),
+
+  with_alpha = function(color, alpha)
+    if alpha > 1.0 or alpha < 0.0 then return color end
+    return (color & 0x00ffffff) | (math.floor(alpha * 255.0) << 24)
+  end,
+}
+"""
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        let paths = [
+            "\(home)/.config/sketchybar/colors.lua",
+            "/Users/new/Documents/Antigravity/waybar/sketchybar_src/colors.lua"
+        ]
+
+        for p in paths {
+            try? content.write(toFile: p, atomically: true, encoding: .utf8)
+        }
+
+        // Asynchronously reload sketchybar
+        DispatchQueue.global(qos: .utility).async {
+            let task = Process()
+            task.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+            task.arguments = ["sketchybar", "--reload"]
+            try? task.run()
+        }
+    }
+}
+
 // ── Scanner ──────────────────────────────────────────────────────────────────
 class WallpaperScanner {
     static let validExtensions = Set(["jpg", "jpeg", "png", "webp", "heic", "tiff"])
@@ -92,6 +296,9 @@ class BottomPillView: NSView {
         }
     }
 
+    var accentColor: NSColor = NSColor(red: 200/255.0, green: 180/255.0, blue: 250/255.0, alpha: 1.0)
+    var islandColor: NSColor = NSColor(red: 19/255.0, green: 22/255.0, blue: 48/255.0, alpha: 0.88)
+
     var onClick: (() -> Void)?
 
     override init(frame frameRect: NSRect) {
@@ -140,29 +347,29 @@ class BottomPillView: NSView {
         let pillRect = bounds.insetBy(dx: 1, dy: 1)
         let path = NSBezierPath(roundedRect: pillRect, xRadius: 10, yRadius: 10)
 
-        // Island Background (#131630 @ 88% opacity, slightly brighter on hover)
+        // Island Background (Adapts dynamically to theme)
         let bgColor = isHovered 
-            ? NSColor(red: 25/255.0, green: 28/255.0, blue: 58/255.0, alpha: 0.94)
-            : NSColor(red: 19/255.0, green: 22/255.0, blue: 48/255.0, alpha: 0.88)
+            ? islandColor.withAlphaComponent(0.96)
+            : islandColor.withAlphaComponent(0.88)
         bgColor.setFill()
         path.fill()
 
-        // Border: Lavender glow (#c8b4fa)
+        // Border: Dynamic accent glow
         let borderColor = isHovered
-            ? NSColor(red: 200/255.0, green: 180/255.0, blue: 250/255.0, alpha: 0.85)
-            : NSColor(red: 200/255.0, green: 180/255.0, blue: 250/255.0, alpha: 0.32)
+            ? accentColor.withAlphaComponent(0.85)
+            : accentColor.withAlphaComponent(0.35)
         borderColor.setStroke()
         path.lineWidth = isHovered ? 1.5 : 1.0
         path.stroke()
 
-        // Lavender Font
+        // Font
         let font = NSFont(name: "JetBrainsMono Nerd Font", size: 12.0)
             ?? NSFont(name: "JetBrainsMono-Bold", size: 12.0)
             ?? NSFont.systemFont(ofSize: 12.0, weight: .semibold)
 
         let textColor = isHovered
-            ? NSColor(red: 240/255.0, green: 235/255.0, blue: 255/255.0, alpha: 1.0)
-            : NSColor(red: 200/255.0, green: 180/255.0, blue: 250/255.0, alpha: 1.0)
+            ? NSColor.white
+            : accentColor
 
         let iconStr = "󰸉 "
         let displayText = iconStr + (title.isEmpty ? "Wallpapers" : title)
@@ -263,6 +470,12 @@ class BottomPillWindow: NSPanel {
     func updatePill(title: String) {
         pillView.title = title
         reposition()
+    }
+
+    func updateColors(accent: NSColor, island: NSColor) {
+        pillView.accentColor = accent
+        pillView.islandColor = island
+        pillView.needsDisplay = true
     }
 
     func setDesktopVisibility(empty: Bool) {
@@ -397,15 +610,18 @@ class GalleryWindow: NSPanel, WKScriptMessageHandler, WKNavigationDelegate {
 
         injectWallpapers()
         webView.evaluateJavaScript("window.focus();", completionHandler: nil)
+
+        // Hide desktop bottom pill while gallery is open so it never peeks out underneath!
+        AppDelegate.shared?.pillWindow.setDesktopVisibility(empty: false)
     }
 
     override func keyDown(with event: NSEvent) {
         switch event.keyCode {
-        case 123, 126, 4: // Left / Up arrow, 'h'
+        case 123, 126: // Left / Up arrow
             webView.evaluateJavaScript("window.prev();", completionHandler: nil)
-        case 124, 125, 37: // Right / Down arrow, 'l'
+        case 124, 125: // Right / Down arrow
             webView.evaluateJavaScript("window.next();", completionHandler: nil)
-        case 36, 49: // Return or Space
+        case 36: // Return
             webView.evaluateJavaScript("window.selectCurrent();", completionHandler: nil)
         case 53: // Escape
             close()
@@ -420,6 +636,9 @@ class GalleryWindow: NSPanel, WKScriptMessageHandler, WKNavigationDelegate {
         orderOut(nil)
         NSApp.setActivationPolicy(.accessory)
         onClose?()
+
+        // Restore desktop bottom pill check
+        AppDelegate.shared?.checkDesktopState()
     }
 
     // WKScriptMessageHandler
@@ -484,15 +703,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 return event
             }
 
-            NSLog(">>> Local key down: keyCode=\(event.keyCode)")
             switch event.keyCode {
-            case 123, 126, 4: // Left / Up arrow, 'h'
+            case 123, 126: // Left / Up arrow
                 gallery.webView.evaluateJavaScript("window.prev();", completionHandler: nil)
                 return nil
-            case 124, 125, 37: // Right / Down arrow, 'l'
+            case 124, 125: // Right / Down arrow
                 gallery.webView.evaluateJavaScript("window.next();", completionHandler: nil)
                 return nil
-            case 36, 49: // Return or Space
+            case 36: // Return
                 gallery.webView.evaluateJavaScript("window.selectCurrent();", completionHandler: nil)
                 return nil
             case 53: // Escape
@@ -511,13 +729,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 return
             }
 
-            NSLog(">>> Global key down: keyCode=\(event.keyCode)")
             switch event.keyCode {
             case 123, 126: // Left / Up arrow
                 gallery.webView.evaluateJavaScript("window.prev();", completionHandler: nil)
             case 124, 125: // Right / Down arrow
                 gallery.webView.evaluateJavaScript("window.next();", completionHandler: nil)
-            case 36, 49: // Return or Space
+            case 36: // Return
                 gallery.webView.evaluateJavaScript("window.selectCurrent();", completionHandler: nil)
             case 53: // Escape
                 gallery.close()
@@ -559,6 +776,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Check desktop state immediately
         checkDesktopState()
+
+        // Initialize colors from current wallpaper if available
+        let currentPath = WallpaperScanner.currentWallpaperPath()
+        let currentName = WallpaperScanner.currentWallpaperName()
+        if !currentPath.isEmpty {
+            let theme = ThemeExtractor.extract(from: currentPath, name: currentName)
+            pillWindow.updateColors(accent: theme.accentNSColor, island: theme.islandNSColor)
+        }
 
         // Listen for IPC Notifications (e.g. from hotkeys / skhd)
         DistributedNotificationCenter.default().addObserver(
@@ -611,6 +836,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc func checkDesktopState() {
+        // If gallery window is open, never show the bottom pill
+        if galleryWindow.isVisible && galleryWindow.alphaValue > 0.4 {
+            pillWindow.setDesktopVisibility(empty: false)
+            return
+        }
         let empty = isDesktopEmpty()
         pillWindow.setDesktopVisibility(empty: empty)
     }
@@ -658,7 +888,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
 
+        // Dynamic theme extraction & Sketchybar reload
+        let theme = ThemeExtractor.extract(from: path, name: name)
+        ThemeExtractor.applyTheme(theme)
+
+        // Update bottom pill colors
+        pillWindow.updateColors(accent: theme.accentNSColor, island: theme.islandNSColor)
         pillWindow.updatePill(title: name)
+
+        // Update gallery CSS variables in real time
+        let js = "if (window.setTheme) { window.setTheme('#\(theme.accentHex)', '#\(theme.islandHex)', '#\(theme.textWhiteHex)'); }"
+        galleryWindow.webView.evaluateJavaScript(js, completionHandler: nil)
     }
 }
 
