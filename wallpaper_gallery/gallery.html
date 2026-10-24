@@ -12,13 +12,13 @@
       -webkit-user-select: none;
     }
 
-    body {
+    html, body {
       width: 100vw;
       height: 100vh;
       overflow: hidden;
-      background: rgba(12, 14, 28, 0.78);
-      backdrop-filter: blur(28px) saturate(140%);
-      -webkit-backdrop-filter: blur(28px) saturate(140%);
+      background: transparent !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
       font-family: "JetBrainsMono Nerd Font", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       display: flex;
       flex-direction: column;
@@ -30,42 +30,73 @@
     .top-badge {
       position: absolute;
       top: 36px;
-      padding: 6px 16px;
-      background: rgba(20, 23, 47, 0.7);
-      border: 1px solid rgba(200, 180, 250, 0.25);
+      padding: 8px 20px;
+      background: rgba(19, 22, 48, 0.90);
+      border: 1px solid rgba(200, 180, 250, 0.35);
       border-radius: 20px;
-      font-size: 11px;
-      letter-spacing: 2px;
+      font-size: 12px;
+      letter-spacing: 1.5px;
       color: #c8b4fa;
       text-transform: uppercase;
       font-weight: 700;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
     }
 
     .close-btn {
       position: absolute;
       top: 36px;
       right: 48px;
-      width: 32px;
-      height: 32px;
-      background: rgba(20, 23, 47, 0.7);
-      border: 1px solid rgba(200, 180, 250, 0.25);
+      width: 36px;
+      height: 36px;
+      background: rgba(19, 22, 48, 0.90);
+      border: 1px solid rgba(200, 180, 250, 0.35);
       border-radius: 50%;
       color: #c8b4fa;
-      font-size: 14px;
+      font-size: 15px;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.2s cubic-bezier(0.2, 0.9, 0.3, 1);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
     }
 
     .close-btn:hover {
       background: #c8b4fa;
       color: #14172f;
-      transform: scale(1.08);
+      transform: scale(1.1);
+      box-shadow: 0 0 20px rgba(200, 180, 250, 0.6);
+    }
+
+    .toast {
+      position: absolute;
+      top: 90px;
+      background: rgba(20, 23, 47, 0.94);
+      border: 1px solid #a6e3a1;
+      color: #a6e3a1;
+      padding: 8px 22px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(166, 227, 161, 0.3);
+      opacity: 0;
+      transform: translateY(-8px);
+      transition: opacity 0.25s ease, transform 0.25s ease;
+      pointer-events: none;
+      z-index: 1000;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
     }
 
     .stage {
@@ -74,8 +105,6 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      perspective: 1200px;
-      perspective-origin: 50% 50%;
       position: relative;
     }
 
@@ -83,7 +112,6 @@
       width: 0;
       height: 0;
       position: relative;
-      transform-style: preserve-3d;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -91,22 +119,21 @@
 
     .card {
       position: absolute;
-      width: 220px;
-      height: 390px;
-      left: -110px;
-      top: -195px;
-      border-radius: 12px;
+      width: 175px;
+      height: 380px;
+      left: -87.5px;
+      top: -190px;
+      border-radius: 8px;
       overflow: hidden;
       cursor: pointer;
-      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.65);
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.65);
       border: 1px solid rgba(200, 180, 250, 0.25);
-      transition: transform 0.4s cubic-bezier(0.2, 0.9, 0.3, 1),
-                  opacity 0.4s ease,
-                  filter 0.4s ease,
-                  box-shadow 0.4s ease,
-                  border-color 0.4s ease;
+      transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1),
+                  opacity 0.35s ease,
+                  filter 0.35s ease,
+                  box-shadow 0.35s ease,
+                  border-color 0.35s ease;
       background: #14172f;
-      transform-style: preserve-3d;
       will-change: transform, opacity;
     }
 
@@ -119,45 +146,57 @@
     }
 
     .card.active {
-      border: 2px solid #c8b4fa;
-      box-shadow: 0 0 35px rgba(200, 180, 250, 0.45), 0 25px 60px rgba(0, 0, 0, 0.85);
+      border: 2.5px solid #c8b4fa;
+      box-shadow: 0 0 35px rgba(200, 180, 250, 0.55), 0 22px 55px rgba(0, 0, 0, 0.85);
       cursor: pointer;
+      z-index: 100;
     }
 
     .card.active::after {
       content: "⏎ APPLY";
       position: absolute;
-      bottom: 12px;
+      bottom: 14px;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(20, 23, 47, 0.85);
+      background: rgba(19, 22, 48, 0.92);
       border: 1px solid #c8b4fa;
       color: #c8b4fa;
-      padding: 4px 12px;
+      padding: 5px 14px;
       border-radius: 12px;
-      font-size: 10px;
+      font-size: 11px;
       font-weight: 700;
       letter-spacing: 1px;
-      opacity: 0;
-      transition: opacity 0.2s;
+      opacity: 0.92;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+      transition: all 0.2s ease;
     }
 
     .card.active:hover::after {
-      opacity: 1;
+      background: #c8b4fa;
+      color: #14172f;
+      transform: translateX(-50%) scale(1.05);
+      box-shadow: 0 0 20px rgba(200, 180, 250, 0.6);
     }
 
     .bottom-bar {
       position: absolute;
-      bottom: 40px;
+      bottom: 28px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
       text-align: center;
+      background: rgba(19, 22, 48, 0.92);
+      border: 1px solid rgba(200, 180, 250, 0.35);
+      border-radius: 18px;
+      padding: 12px 32px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
     }
 
     .wallpaper-title {
-      font-size: 17px;
+      font-size: 16px;
       font-weight: 700;
       color: #c8b4fa;
       letter-spacing: 0.5px;
@@ -177,24 +216,58 @@
     }
 
     .tag {
-      background: rgba(200, 180, 250, 0.12);
+      background: rgba(200, 180, 250, 0.15);
       color: #c8b4fa;
-      padding: 2px 8px;
-      border-radius: 6px;
+      padding: 3px 10px;
+      border-radius: 8px;
       font-size: 11px;
+      font-weight: 600;
+    }
+
+    .apply-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(200, 180, 250, 0.18);
+      border: 1px solid #c8b4fa;
+      color: #f0edfc;
+      padding: 6px 22px;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.2, 0.9, 0.3, 1);
+      box-shadow: 0 4px 15px rgba(200, 180, 250, 0.2);
+    }
+
+    .apply-btn:hover {
+      background: #c8b4fa;
+      color: #14172f;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 25px rgba(200, 180, 250, 0.5);
+    }
+
+    .apply-btn.applied {
+      background: #a6e3a1;
+      border-color: #a6e3a1;
+      color: #14172f;
+      box-shadow: 0 0 25px rgba(166, 227, 161, 0.6);
+      transform: scale(1.03);
     }
 
     .shortcuts-hint {
-      margin-top: 4px;
+      margin-top: 2px;
       font-size: 11px;
-      color: rgba(240, 237, 252, 0.45);
+      color: rgba(240, 237, 252, 0.55);
       display: flex;
       gap: 16px;
     }
 
     .shortcuts-hint kbd {
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.10);
+      border: 1px solid rgba(255, 255, 255, 0.2);
       padding: 1px 6px;
       border-radius: 4px;
       font-size: 10px;
@@ -206,6 +279,8 @@
   <div class="top-badge">
     <span>󰸉</span> Wallpaper Gallery (<span id="count">0</span>)
   </div>
+
+  <div class="toast" id="toast">✓ Applied in Real Time</div>
 
   <div class="close-btn" id="closeBtn" title="Close (Esc)">✕</div>
 
@@ -219,9 +294,12 @@
       <span class="tag" id="folderTag">folder</span>
       <span id="indexTag">0 / 0</span>
     </div>
+    <button class="apply-btn" id="applyBtn" onclick="selectCurrent()">
+      <span>󰸉</span> APPLY IN REAL TIME <kbd>⏎</kbd>
+    </button>
     <div class="shortcuts-hint">
       <span><kbd>←</kbd> <kbd>→</kbd> Navigate</span>
-      <span><kbd>⏎</kbd> Set Wallpaper</span>
+      <span><kbd>⏎</kbd> Apply</span>
       <span><kbd>⎋ Esc</kbd> Close</span>
     </div>
   </div>
@@ -230,7 +308,6 @@
     let wallpapers = [];
     let currentIndex = 0;
     let isWheeling = false;
-    let wheelTimeout = null;
 
     const carousel = document.getElementById("carousel");
     const titleEl = document.getElementById("title");
@@ -289,31 +366,27 @@
 
         if (d === 0) {
           card.className = "card active";
-          card.style.transform = "translateX(0) translateZ(110px) rotateY(0deg) scale(1.04)";
+          card.style.transform = "translateX(0) scale(1.05)";
           card.style.opacity = "1";
           card.style.filter = "brightness(1.05)";
           card.style.zIndex = "100";
         } else if (d > 0) {
           card.className = "card";
-          const x = 145 + (d - 1) * 72;
-          const z = -40 - (d - 1) * 45;
-          const scale = Math.max(0.68, 1 - d * 0.055);
-          const opacity = Math.max(0.2, 1 - d * 0.12);
-          const rotY = -35;
-          card.style.transform = `translateX(${x}px) translateZ(${z}px) rotateY(${rotY}deg) scale(${scale})`;
+          const x = 115 + (d - 1) * 88;
+          const scale = Math.max(0.62, 1.0 - d * 0.055);
+          const opacity = Math.max(0.25, 1.0 - d * 0.10);
+          card.style.transform = `translateX(${x}px) scale(${scale})`;
           card.style.opacity = opacity.toString();
-          card.style.filter = `brightness(${Math.max(0.5, 0.9 - d * 0.08)})`;
+          card.style.filter = `brightness(${Math.max(0.55, 0.92 - d * 0.06)})`;
           card.style.zIndex = (100 - d).toString();
         } else {
           card.className = "card";
-          const x = -145 - (absD - 1) * 72;
-          const z = -40 - (absD - 1) * 45;
-          const scale = Math.max(0.68, 1 - absD * 0.055);
-          const opacity = Math.max(0.2, 1 - absD * 0.12);
-          const rotY = 35;
-          card.style.transform = `translateX(${x}px) translateZ(${z}px) rotateY(${rotY}deg) scale(${scale})`;
+          const x = -115 - (absD - 1) * 88;
+          const scale = Math.max(0.62, 1.0 - absD * 0.055);
+          const opacity = Math.max(0.25, 1.0 - absD * 0.10);
+          card.style.transform = `translateX(${x}px) scale(${scale})`;
           card.style.opacity = opacity.toString();
-          card.style.filter = `brightness(${Math.max(0.5, 0.9 - absD * 0.08)})`;
+          card.style.filter = `brightness(${Math.max(0.55, 0.92 - absD * 0.06)})`;
           card.style.zIndex = (100 - absD).toString();
         }
       });
@@ -328,8 +401,8 @@
 
     function setIndex(index) {
       if (wallpapers.length === 0) return;
-      if (index < 0) index = 0;
-      if (index >= wallpapers.length) index = wallpapers.length - 1;
+      if (index < 0) index = wallpapers.length - 1;
+      if (index >= wallpapers.length) index = 0;
       currentIndex = index;
       updateLayout();
     }
@@ -342,37 +415,81 @@
       setIndex(currentIndex + 1);
     }
 
+    function showToast(text) {
+      const toast = document.getElementById("toast");
+      if (!toast) return;
+      toast.innerText = text;
+      toast.classList.add("show");
+      setTimeout(() => {
+        toast.classList.remove("show");
+      }, 1600);
+    }
+
     function selectCurrent() {
       if (wallpapers.length === 0) return;
       const current = wallpapers[currentIndex];
+      
+      const btn = document.getElementById("applyBtn");
+      if (btn) {
+        btn.classList.add("applied");
+        btn.innerHTML = `<span>✓</span> APPLIED IN REAL TIME!`;
+        setTimeout(() => {
+          btn.classList.remove("applied");
+          btn.innerHTML = `<span>󰸉</span> APPLY IN REAL TIME <kbd>⏎</kbd>`;
+        }, 1500);
+      }
+
+      showToast(`✓ Applied: ${current.name}`);
+
       if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.bridge) {
         window.webkit.messageHandlers.bridge.postMessage({
-          action: "select",
+          action: "apply",
           path: current.path,
           name: current.name
         });
       }
     }
 
-    function closeGallery() {
+    function closeGallery(reason) {
       if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.bridge) {
         window.webkit.messageHandlers.bridge.postMessage({
-          action: "close"
+          action: "close",
+          reason: reason || "unknown"
         });
       }
     }
 
-    // Keyboard navigation
+    // Expose functions globally for Swift WebKit evaluateJavaScript
+    window.prev = prev;
+    window.next = next;
+    window.selectCurrent = selectCurrent;
+    window.closeGallery = closeGallery;
+
+    // Keyboard navigation inside WebKit
     window.addEventListener("keydown", (e) => {
-      if (e.key === "ArrowLeft" || e.key === "h") {
-        prev();
-      } else if (e.key === "ArrowRight" || e.key === "l") {
-        next();
-      } else if (e.key === "Enter" || e.key === " ") {
+      const isLeft = e.key === "ArrowLeft" || e.code === "ArrowLeft" || e.keyCode === 37 || e.code === "KeyH";
+      const isRight = e.key === "ArrowRight" || e.code === "ArrowRight" || e.keyCode === 39 || e.code === "KeyL";
+      const isUp = e.key === "ArrowUp" || e.code === "ArrowUp" || e.keyCode === 38 || e.code === "KeyK";
+      const isDown = e.key === "ArrowDown" || e.code === "ArrowDown" || e.keyCode === 40 || e.code === "KeyJ";
+      const isEnter = e.key === "Enter" || e.code === "Enter" || e.keyCode === 13 || e.key === " " || e.code === "Space" || e.keyCode === 32;
+      const isEscape = e.key === "Escape" || e.code === "Escape" || e.keyCode === 27;
+
+      if (isLeft || isUp) {
         e.preventDefault();
+        e.stopPropagation();
+        prev();
+      } else if (isRight || isDown) {
+        e.preventDefault();
+        e.stopPropagation();
+        next();
+      } else if (isEnter) {
+        e.preventDefault();
+        e.stopPropagation();
         selectCurrent();
-      } else if (e.key === "Escape" || e.key === "q") {
-        closeGallery();
+      } else if (isEscape) {
+        e.preventDefault();
+        e.stopPropagation();
+        closeGallery("escape_key");
       }
     });
 
@@ -393,14 +510,14 @@
       }
     }, { passive: false });
 
-    // Close on click outside cards
-    document.getElementById("bg").addEventListener("click", (e) => {
-      if (e.target === document.getElementById("bg") || e.target === document.getElementById("stage")) {
-        closeGallery();
-      }
+    // Focus on click background
+    document.getElementById("bg").addEventListener("click", () => {
+      window.focus();
     });
 
-    document.getElementById("closeBtn").addEventListener("click", closeGallery);
+    document.getElementById("closeBtn").addEventListener("click", () => {
+      closeGallery("close_button");
+    });
 
     // Bridge function called from Swift
     window.loadWallpapers = function(items, activePath) {
@@ -411,7 +528,15 @@
         if (found !== -1) currentIndex = found;
       }
       renderCards();
+      window.focus();
     };
+
+    // Tell Swift that WebKit is ready
+    document.addEventListener("DOMContentLoaded", () => {
+      if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.bridge) {
+        window.webkit.messageHandlers.bridge.postMessage({ action: "ready" });
+      }
+    });
   </script>
 </body>
 </html>

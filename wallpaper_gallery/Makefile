@@ -8,6 +8,7 @@ all: $(TARGET)
 $(TARGET): $(SRC)
 	@mkdir -p bin
 	$(SWIFTC) $(SWIFTFLAGS) -o $@ $<
+	@cp gallery.html bin/gallery.html
 	@echo "Build complete: $(TARGET)"
 
 install: $(TARGET)

@@ -19,13 +19,12 @@ class WallpaperScanner {
     static func scan() -> [WallpaperItem] {
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         let candidateDirs = [
-            "\(home)/wallpapers",
             "\(home)/wallapers",
-            "\(home)/Pictures/Wallpapers",
-            "\(home)/Documents/Antigravity/waybar/wallpapers"
+            "\(home)/wallpapers"
         ]
 
         var seenPaths = Set<String>()
+        var seenNames = Set<String>()
         var items: [WallpaperItem] = []
 
         for dir in candidateDirs {
@@ -45,9 +44,14 @@ class WallpaperScanner {
                 let ext = fileURL.pathExtension.lowercased()
                 if validExtensions.contains(ext) {
                     let standardPath = fileURL.resolvingSymlinksInPath().path
-                    if !seenPaths.contains(standardPath) {
+                    let rawName = fileURL.deletingPathExtension().lastPathComponent
+                    let normalizedName = rawName.lowercased()
+
+                    // Ensure deduplication by both resolved path and normalized filename
+                    if !seenPaths.contains(standardPath) && !seenNames.contains(normalizedName) {
                         seenPaths.insert(standardPath)
-                        let rawName = fileURL.deletingPathExtension().lastPathComponent
+                        seenNames.insert(normalizedName)
+
                         let parentFolder = fileURL.deletingLastPathComponent().lastPathComponent
                         let category = (parentFolder.lowercased() == "wallpapers" || parentFolder.lowercased() == "wallapers") ? "all" : parentFolder
                         items.append(WallpaperItem(path: standardPath, name: rawName, category: category))
@@ -71,7 +75,7 @@ class WallpaperScanner {
         if !path.isEmpty {
             return URL(fileURLWithPath: path).deletingPathExtension().lastPathComponent
         }
-        return "arona_blue_archive_hq"
+        return "mashiro_kanon_archlinux"
     }
 }
 
@@ -189,6 +193,49 @@ class BottomPillView: NSView {
     }
 }
 
+// ── Desktop State Detector ───────────────────────────────────────────────────
+func isDesktopEmpty() -> Bool {
+    let options: CGWindowListOption = [.optionOnScreenOnly, .excludeDesktopElements]
+    guard let infoList = CGWindowListCopyWindowInfo(options, kCGNullWindowID) as? [[String: Any]] else {
+        return true
+    }
+
+    let ignoredOwners: Set<String> = [
+        "wallpaper_gallery",
+        "Window Server",
+        "Dock",
+        "borders",
+        "square_corners",
+        "sketchybar",
+        "SystemUIServer",
+        "ControlCenter",
+        "NotificationCenter",
+        "Центр уведомлени",
+        "Центр уведомлений",
+        "Центр управления",
+        "Spotlight",
+        "TextInputMenuAgent",
+        "StatusMenu"
+    ]
+
+    for info in infoList {
+        let layer = info[kCGWindowLayer as String] as? Int ?? 0
+        let alpha = info[kCGWindowAlpha as String] as? Double ?? 1.0
+        let owner = info[kCGWindowOwnerName as String] as? String ?? ""
+        let bounds = info[kCGWindowBounds as String] as? [String: Any] ?? [:]
+        let w = bounds["Width"] as? Double ?? 0
+        let h = bounds["Height"] as? Double ?? 0
+
+        // If any standard application window is on-screen
+        if layer == 0 && w > 120 && h > 120 && alpha > 0.05 {
+            if !ignoredOwners.contains(owner) {
+                return false
+            }
+        }
+    }
+    return true
+}
+
 // ── Bottom Pill Panel Window ─────────────────────────────────────────────────
 class BottomPillWindow: NSPanel {
     let pillView = BottomPillView()
@@ -205,7 +252,8 @@ class BottomPillWindow: NSPanel {
         isOpaque = false
         backgroundColor = .clear
         hasShadow = true
-        level = .floating
+        // Positioned on desktop layer below all normal application windows
+        level = NSWindow.Level(NSWindow.Level.normal.rawValue - 1)
         collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]
 
         contentView = pillView
@@ -215,6 +263,17 @@ class BottomPillWindow: NSPanel {
     func updatePill(title: String) {
         pillView.title = title
         reposition()
+    }
+
+    func setDesktopVisibility(empty: Bool) {
+        let targetAlpha: CGFloat = empty ? 1.0 : 0.0
+        if abs(alphaValue - targetAlpha) > 0.05 {
+            NSAnimationContext.runAnimationGroup { ctx in
+                ctx.duration = 0.2
+                self.animator().alphaValue = targetAlpha
+            }
+            ignoresMouseEvents = !empty
+        }
     }
 
     func reposition() {
@@ -231,10 +290,14 @@ class BottomPillWindow: NSPanel {
 }
 
 // ── Coverflow Modal Gallery Window ───────────────────────────────────────────
-class GalleryWindow: NSPanel, WKScriptMessageHandler {
+class GalleryWindow: NSPanel, WKScriptMessageHandler, WKNavigationDelegate {
     var webView: WKWebView!
     var onWallpaperSelected: ((String, String) -> Void)?
     var onClose: (() -> Void)?
+    var isHTMLLoaded = false
+
+    override var canBecomeKey: Bool { return true }
+    override var canBecomeMain: Bool { return true }
 
     init() {
         guard let screen = NSScreen.main else {
@@ -244,7 +307,7 @@ class GalleryWindow: NSPanel, WKScriptMessageHandler {
 
         super.init(
             contentRect: screen.frame,
-            styleMask: [.borderless, .nonactivatingPanel],
+            styleMask: [.borderless],
             backing: .buffered,
             defer: false
         )
@@ -261,6 +324,7 @@ class GalleryWindow: NSPanel, WKScriptMessageHandler {
         config.userContentController = controller
 
         webView = WKWebView(frame: screen.frame, configuration: config)
+        webView.navigationDelegate = self
         webView.setValue(false, forKey: "drawsBackground")
         webView.autoresizingMask = [.width, .height]
         contentView = webView
@@ -269,10 +333,11 @@ class GalleryWindow: NSPanel, WKScriptMessageHandler {
     }
 
     func loadGalleryHTML() {
-        let appDir = Bundle.main.bundlePath
+        let execURL = URL(fileURLWithPath: CommandLine.arguments[0]).resolvingSymlinksInPath()
+        let execDir = execURL.deletingLastPathComponent().path
         let possiblePaths = [
-            "\(appDir)/gallery.html",
-            "\(CommandLine.arguments[0])/../gallery.html",
+            "\(execDir)/gallery.html",
+            "\(execDir)/../gallery.html",
             "/Users/new/Documents/Antigravity/waybar/wallpaper_gallery/gallery.html"
         ]
 
@@ -287,56 +352,89 @@ class GalleryWindow: NSPanel, WKScriptMessageHandler {
 
         if let url = htmlURL {
             let homeURL = FileManager.default.homeDirectoryForCurrentUser
-            webView.loadFileURL(url, allowingReadAccessTo: homeURL)
+            if let htmlContent = try? String(contentsOf: url, encoding: .utf8) {
+                webView.loadHTMLString(htmlContent, baseURL: homeURL)
+            } else {
+                webView.loadFileURL(url, allowingReadAccessTo: homeURL)
+            }
+        }
+    }
+
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        isHTMLLoaded = true
+        if isVisible && alphaValue > 0.5 {
+            injectWallpapers()
+        }
+    }
+
+    func injectWallpapers() {
+        let items = WallpaperScanner.scan()
+        let currentPath = WallpaperScanner.currentWallpaperPath()
+        if let jsonData = try? JSONEncoder().encode(items),
+           let jsonString = String(data: jsonData, encoding: .utf8) {
+            let js = "if (window.loadWallpapers) { window.loadWallpapers(\(jsonString), '\(currentPath)'); }"
+            webView.evaluateJavaScript(js, completionHandler: nil)
         }
     }
 
     func open() {
+        NSLog(">>> GalleryWindow.open() called")
         guard let screen = NSScreen.main else { return }
         setFrame(screen.frame, display: true)
 
-        let items = WallpaperScanner.scan()
-        let currentPath = WallpaperScanner.currentWallpaperPath()
-
-        if let jsonData = try? JSONEncoder().encode(items),
-           let jsonString = String(data: jsonData, encoding: .utf8) {
-            let js = "window.loadWallpapers(\(jsonString), '\(currentPath)');"
-            webView.evaluateJavaScript(js, completionHandler: nil)
-        }
-
-        alphaValue = 0.0
+        NSApp.setActivationPolicy(.regular)
+        alphaValue = 1.0
+        orderFrontRegardless()
         makeKeyAndOrderFront(nil)
+        makeFirstResponder(webView)
         NSApp.activate(ignoringOtherApps: true)
 
-        NSAnimationContext.runAnimationGroup { ctx in
-            ctx.duration = 0.22
-            ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)
-            self.animator().alphaValue = 1.0
+        injectWallpapers()
+        webView.evaluateJavaScript("window.focus();", completionHandler: nil)
+    }
+
+    override func keyDown(with event: NSEvent) {
+        switch event.keyCode {
+        case 123, 126, 4: // Left / Up arrow, 'h'
+            webView.evaluateJavaScript("window.prev();", completionHandler: nil)
+        case 124, 125, 37: // Right / Down arrow, 'l'
+            webView.evaluateJavaScript("window.next();", completionHandler: nil)
+        case 36, 49: // Return or Space
+            webView.evaluateJavaScript("window.selectCurrent();", completionHandler: nil)
+        case 53: // Escape
+            close()
+        default:
+            super.keyDown(with: event)
         }
     }
 
     override func close() {
-        NSAnimationContext.runAnimationGroup({ ctx in
-            ctx.duration = 0.18
-            ctx.timingFunction = CAMediaTimingFunction(name: .easeIn)
-            self.animator().alphaValue = 0.0
-        }) {
-            self.orderOut(nil)
-            self.onClose?()
-        }
+        NSLog(">>> GalleryWindow.close() called!")
+        alphaValue = 0.0
+        orderOut(nil)
+        NSApp.setActivationPolicy(.accessory)
+        onClose?()
     }
 
     // WKScriptMessageHandler
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         guard let body = message.body as? [String: Any],
               let action = body["action"] as? String else { return }
+        NSLog(">>> WebKit bridge message: \(action)")
 
-        if action == "select" {
+        if action == "ready" {
+            isHTMLLoaded = true
+            if isVisible && alphaValue > 0.5 {
+                injectWallpapers()
+            }
+        } else if action == "apply" || action == "select" {
             let path = body["path"] as? String ?? ""
             let name = body["name"] as? String ?? ""
-            close()
             onWallpaperSelected?(path, name)
+            // Keep gallery open so user sees desktop update in real time!
         } else if action == "close" {
+            let reason = body["reason"] as? String ?? "unknown"
+            NSLog(">>> GalleryWindow.close() requested from WebKit, reason: \(reason)")
             close()
         }
     }
@@ -348,10 +446,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     var pillWindow: BottomPillWindow!
     var galleryWindow: GalleryWindow!
+    var stateTimer: Timer?
+    var sig1Source: DispatchSourceSignal?
+    var sig2Source: DispatchSourceSignal?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         AppDelegate.shared = self
-        NSApp.setActivationPolicy(.accessory) // No dock icon, runs seamlessly in background
+        NSApp.setActivationPolicy(.accessory) // No dock icon when running in background
 
         pillWindow = BottomPillWindow()
         galleryWindow = GalleryWindow()
@@ -366,6 +467,59 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         pillWindow.makeKeyAndOrderFront(nil)
 
+        // Setup signal-based IPC & write PID file
+        setupSignals()
+
+        // Setup local key monitor for gallery navigation
+        NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard let self = self,
+                  let gallery = self.galleryWindow,
+                  gallery.isVisible && gallery.alphaValue > 0.4 else {
+                return event
+            }
+
+            NSLog(">>> Local key down: keyCode=\(event.keyCode)")
+            switch event.keyCode {
+            case 123, 126, 4: // Left / Up arrow, 'h'
+                gallery.webView.evaluateJavaScript("window.prev();", completionHandler: nil)
+                return nil
+            case 124, 125, 37: // Right / Down arrow, 'l'
+                gallery.webView.evaluateJavaScript("window.next();", completionHandler: nil)
+                return nil
+            case 36, 49: // Return or Space
+                gallery.webView.evaluateJavaScript("window.selectCurrent();", completionHandler: nil)
+                return nil
+            case 53: // Escape
+                gallery.close()
+                return nil
+            default:
+                return event
+            }
+        }
+
+        // Setup global key monitor as fallback
+        NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard let self = self,
+                  let gallery = self.galleryWindow,
+                  gallery.isVisible && gallery.alphaValue > 0.4 else {
+                return
+            }
+
+            NSLog(">>> Global key down: keyCode=\(event.keyCode)")
+            switch event.keyCode {
+            case 123, 126: // Left / Up arrow
+                gallery.webView.evaluateJavaScript("window.prev();", completionHandler: nil)
+            case 124, 125: // Right / Down arrow
+                gallery.webView.evaluateJavaScript("window.next();", completionHandler: nil)
+            case 36, 49: // Return or Space
+                gallery.webView.evaluateJavaScript("window.selectCurrent();", completionHandler: nil)
+            case 53: // Escape
+                gallery.close()
+            default:
+                break
+            }
+        }
+
         // Listen for screen resize/resolution changes
         NotificationCenter.default.addObserver(
             forName: NSApplication.didChangeScreenParametersNotification,
@@ -375,37 +529,102 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             self?.pillWindow.reposition()
         }
 
+        // Listen for space change and app activation events to hide/show pill
+        let wsCenter = NSWorkspace.shared.notificationCenter
+        let notifications: [NSNotification.Name] = [
+            NSWorkspace.activeSpaceDidChangeNotification,
+            NSWorkspace.didActivateApplicationNotification,
+            NSWorkspace.didDeactivateApplicationNotification,
+            NSWorkspace.didHideApplicationNotification,
+            NSWorkspace.didUnhideApplicationNotification
+        ]
+        for name in notifications {
+            wsCenter.addObserver(self, selector: #selector(checkDesktopState), name: name, object: nil)
+        }
+
+        // Periodic timer to guarantee state sync
+        stateTimer = Timer.scheduledTimer(
+            timeInterval: 0.5,
+            target: self,
+            selector: #selector(checkDesktopState),
+            userInfo: nil,
+            repeats: true
+        )
+
+        // Check desktop state immediately
+        checkDesktopState()
+
         // Listen for IPC Notifications (e.g. from hotkeys / skhd)
         DistributedNotificationCenter.default().addObserver(
             self,
             selector: #selector(handleToggleNotification),
             name: kToggleNotification,
-            object: nil
+            object: nil,
+            suspensionBehavior: .deliverImmediately
         )
 
         DistributedNotificationCenter.default().addObserver(
             self,
             selector: #selector(handleOpenNotification),
             name: kOpenNotification,
-            object: nil
+            object: nil,
+            suspensionBehavior: .deliverImmediately
         )
     }
 
+    func setupSignals() {
+        signal(SIGUSR1, SIG_IGN)
+        signal(SIGUSR2, SIG_IGN)
+
+        let s1 = DispatchSource.makeSignalSource(signal: SIGUSR1, queue: .main)
+        s1.setEventHandler { [weak self] in
+            NSLog(">>> SIGUSR1 signal caught!")
+            self?.toggleGallery()
+        }
+        s1.resume()
+        sig1Source = s1
+
+        let s2 = DispatchSource.makeSignalSource(signal: SIGUSR2, queue: .main)
+        s2.setEventHandler { [weak self] in
+            NSLog(">>> SIGUSR2 signal caught!")
+            self?.openGallery()
+        }
+        s2.resume()
+        sig2Source = s2
+
+        // Write PID file
+        let pid = ProcessInfo.processInfo.processIdentifier
+        let pidPath = "/tmp/wallpaper_gallery.pid"
+        try? "\(pid)".write(toFile: pidPath, atomically: true, encoding: .utf8)
+        NSLog(">>> Daemon started with PID: \(pid)")
+    }
+
+    func openGallery() {
+        NSLog(">>> openGallery() called. isVisible: \(galleryWindow.isVisible), alpha: \(galleryWindow.alphaValue)")
+        galleryWindow.open()
+    }
+
+    @objc func checkDesktopState() {
+        let empty = isDesktopEmpty()
+        pillWindow.setDesktopVisibility(empty: empty)
+    }
+
     @objc func handleToggleNotification() {
+        NSLog(">>> handleToggleNotification() called")
         DispatchQueue.main.async {
             self.toggleGallery()
         }
     }
 
     @objc func handleOpenNotification() {
+        NSLog(">>> handleOpenNotification() called")
         DispatchQueue.main.async {
-            if !self.galleryWindow.isVisible {
-                self.galleryWindow.open()
-            }
+            self.openGallery()
         }
     }
 
     func toggleGallery() {
+        NSLog(">>> toggleGallery() called. isVisible: \(galleryWindow.isVisible), alpha: \(galleryWindow.alphaValue)")
         if galleryWindow.isVisible && galleryWindow.alphaValue > 0.5 {
             galleryWindow.close()
         } else {
@@ -423,12 +642,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
 
-        // Fallback for all spaces / monitors via AppleScript
-        let escapedPath = path.replacingOccurrences(of: "\"", with: "\\\"")
-        let script = "tell application \"System Events\" to tell every desktop to set picture to \"\(escapedPath)\""
-        if let appleScript = NSAppleScript(source: script) {
-            var err: NSDictionary?
-            appleScript.executeAndReturnError(&err)
+        // Background AppleScript for all desktops and spaces
+        DispatchQueue.global(qos: .utility).async {
+            let escapedPath = path.replacingOccurrences(of: "\"", with: "\\\"")
+            let script = "tell application \"System Events\" to tell every desktop to set picture to \"\(escapedPath)\""
+            if let appleScript = NSAppleScript(source: script) {
+                var err: NSDictionary?
+                appleScript.executeAndReturnError(&err)
+            }
         }
 
         pillWindow.updatePill(title: name)
@@ -436,23 +657,35 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 }
 
 // ── Main Entry Point ─────────────────────────────────────────────────────────
+let pidPath = "/tmp/wallpaper_gallery.pid"
+
 if CommandLine.arguments.contains("--toggle") {
+    if let pidStr = try? String(contentsOfFile: pidPath, encoding: .utf8),
+       let pid = Int32(pidStr.trimmingCharacters(in: .whitespacesAndNewlines)) {
+        kill(pid, SIGUSR1)
+    }
     DistributedNotificationCenter.default().postNotificationName(
         kToggleNotification,
         object: nil,
         userInfo: nil,
         deliverImmediately: true
     )
+    RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.05))
     exit(0)
 }
 
 if CommandLine.arguments.contains("--open") {
+    if let pidStr = try? String(contentsOfFile: pidPath, encoding: .utf8),
+       let pid = Int32(pidStr.trimmingCharacters(in: .whitespacesAndNewlines)) {
+        kill(pid, SIGUSR2)
+    }
     DistributedNotificationCenter.default().postNotificationName(
         kOpenNotification,
         object: nil,
         userInfo: nil,
         deliverImmediately: true
     )
+    RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.05))
     exit(0)
 }
 
