@@ -1,0 +1,66 @@
+#!/usr/bin/env sh
+
+sudo yabai --load-sa
+yabai -m signal --add event=dock_did_restart action="sudo yabai --load-sa"
+
+# --- Основные настройки yabai ---
+yabai -m config external_bar               all:40:0       \
+                mouse_follows_focus        off            \
+                focus_follows_mouse        off            \
+                window_zoom_persist        on             \
+                window_placement           second_child   \
+                window_shadow              float          \
+                window_opacity             on             \
+                window_opacity_duration    0.2            \
+                active_window_opacity      1.0            \
+                normal_window_opacity      0.70           \
+                window_animation_duration  0.15           \
+                window_animation_easing    ease_out_quint \
+                insert_feedback_color      0xffc8b4fa     \
+                split_ratio                0.50           \
+                auto_balance               on             \
+                mouse_modifier             fn             \
+                mouse_action1              move           \
+                mouse_action2              resize         \
+                mouse_drop_action          swap           \
+                                                          \
+                top_padding                8              \
+                bottom_padding             8              \
+                left_padding               2              \
+                right_padding              2              \
+                window_gap                 4
+
+# --- ГЛОБАЛЬНЫЕ ПРАВИЛА ДЛЯ ДИАЛОГОВ И ПОПАПОВ ---
+# Все диалоговые, системные окна, выбор файлов и попапы открываются плавающими
+yabai -m rule --add subrole="^AXDialog$" manage=off
+yabai -m rule --add subrole="^AXSystemDialog$" manage=off
+yabai -m rule --add role="^AXSheet$" manage=off
+
+# Окна настроек, информации о программе, сохранения и открытия файлов
+yabai -m rule --add title="^(Settings|Preferences|Настройки|About.*|General|Select .*|Open .*|Save .*|.*(Open|Save|Choose|Select|Открыть|Сохранить|Выбрать|Открывается сайт).*)$" manage=off
+
+# --- ПРИЛОЖЕНИЯ С МНОЖЕСТВОМ ПОД-ОКОН / JAVA SWING (GHIDRA) ---
+# Все окна Ghidra и Java по умолчанию открываются в float
+yabai -m rule --add app="^(Ghidra|ghidra.*|java)$" manage=off
+yabai -m rule --add app="^(Ghidra|ghidra.*)$" title="^(CodeBrowser.*|Debugger.*|Emulator.*|Version Tracking.*)$" manage=off grid=1:1:0:0:1:1
+
+# Antigravity IDE вспомогательные окна и настройки
+yabai -m rule --add app="^Antigravity IDE$" title="^(Settings|Preferences|Preferences:.*|Antigravity IDE)$" manage=off
+
+# Системные и утилитарные приложения, открывающиеся аккуратно по центру
+yabai -m rule --add app="^(System Preferences|System Settings|Системные настройки)$" manage=off grid=10:10:1:1:8:8
+yabai -m rule --add app="^(Calculator|Калькулятор)$" manage=off grid=6:6:2:2:2:3
+yabai -m rule --add app="^(Просмотр|Preview)$" manage=off grid=12:12:1:1:10:10
+
+# Другие системные приложения, которым противопоказан тайлинг
+yabai -m rule --add app="^(LuLu|Software Update|Обновление ПО|Dictionary|Словарь|VLC|zoom.us|Photo Booth|Archive Utility|Утилита архивации|Python|LibreOffice|App Store|Steam|Alfred|Activity Monitor|Мониторинг системы|Finder|Font Book|Шрифты|ColorSync Utility|Утилита ColorSync|Keychain Access|Связка ключей|Audio MIDI Setup|Настройка MIDI-Audio|Migration Assistant|Ассистент миграции|Shortcuts|Быстрые команды|Weather|Погода|Clock|Часы|Stocks|Акции|Maps|Карты|Reminders|Напоминания|Notes|Заметки|Music|Музыка|Podcasts|Подкасты|TV|Books|Книги)$" manage=off
+yabai -m rule --add label="Safari" app="^Safari$" title="^(General|(Tab|Password|Website|Extension)s|AutoFill|Se(arch|curity)|Privacy|Advance)$" manage=off
+
+# --- ПРАВИЛА ПРОЗРАЧНОСТИ ПРИЛОЖЕНИЙ ---
+yabai -m rule --add app="^Telegram$" opacity=0.85
+yabai -m rule --add app="^Brave Browser$" opacity=0.85
+
+# Основной режим тайлинга
+yabai -m config layout bsp
+
+echo "yabai configuration loaded.."

@@ -1,0 +1,47 @@
+# Фокус окон (Option + H/J/K/L)
+alt - h : yabai -m window --focus west
+alt - j : yabai -m window --focus south
+alt - k : yabai -m window --focus north
+alt - l : yabai -m window --focus east
+
+# Перемещение / встраивание окна в раскладку (Option + Shift + H/J/K/L)
+# warp переносит окно в указанное направление, автоматически создавая сплит
+shift + alt - h : yabai -m window --warp west
+shift + alt - j : yabai -m window --warp south
+shift + alt - k : yabai -m window --warp north
+shift + alt - l : yabai -m window --warp east
+
+# Обмен окон местами (Ctrl + Option + H/J/K/L)
+ctrl + alt - h : yabai -m window --swap west
+ctrl + alt - j : yabai -m window --swap south
+ctrl + alt - k : yabai -m window --swap north
+ctrl + alt - l : yabai -m window --swap east
+
+# Управление формой и геометрией окон
+alt - b : yabai -m space --balance
+alt - r : yabai -m space --rotate 90
+alt - e : yabai -m window --toggle split
+alt - m : yabai -m space --mirror y-axis
+shift + alt - m : yabai -m space --mirror x-axis
+
+# Размер и состояние окон
+alt - f : yabai -m window --toggle zoom-fullscreen || yabai -m window --grid 1:1:0:0:1:1
+alt - space : ~/.config/yabai/scripts/smart_toggle_float.sh
+alt - w : yabai -m window --close
+
+# Изменение размера окон с клавиатуры (Ctrl + Option + Стрелки)
+ctrl + alt - left  : yabai -m window --resize left:-50:0  || yabai -m window --resize right:-50:0
+ctrl + alt - right : yabai -m window --resize right:50:0  || yabai -m window --resize left:50:0
+ctrl + alt - down  : yabai -m window --resize bottom:0:50 || yabai -m window --resize top:0:50
+ctrl + alt - up    : yabai -m window --resize top:0:-50   || yabai -m window --resize bottom:0:-50
+
+# Rofi-подобный лаунчер приложений и папок (Cmd + Пробел и Option + D)
+cmd - space : ~/.config/rofi/launcher.py
+alt - d : ~/.config/rofi/launcher.py
+
+# Переключение рабочих столов (Option + Цифры)
+alt - 1 : yabai -m space --focus 1
+alt - 2 : yabai -m space --focus 2
+alt - 3 : yabai -m space --focus 3
+alt - 4 : yabai -m space --focus 4
+alt - return : open -n -a Kitty

@@ -1,0 +1,20 @@
+# macOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Temporary files & crash dumps
+*.log
+hs_err_pid*
+*.bak
+*.bak.*
+
+# Build artifacts
+*.o
+*.obj
+*.dylib
+square_corners/dump*.txt
+square_corners/test*
+square_corners/lib*
+sketchybar_src
