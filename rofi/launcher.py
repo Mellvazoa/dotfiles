@@ -105,7 +105,20 @@ for name, (item_type, path) in folder_map.items():
 
 input_data = "\n".join(entries)
 
-# Rofi styling matching Catppuccin / Arch theme
+# Dynamic styling matching wallpaper theme
+theme_path = os.path.expanduser("~/.config/rofi/colors.json")
+bg_color = "353058"
+text_color = "e4d2fd"
+if os.path.exists(theme_path):
+    try:
+        import json
+        with open(theme_path, "r") as f:
+            t = json.load(f)
+            bg_color = t.get("bg", bg_color)
+            text_color = t.get("accent_light", text_color)
+    except Exception:
+        pass
+
 choose_cmd = [
     "/opt/homebrew/bin/choose",
     "-p", "Type to filter...",
@@ -113,8 +126,8 @@ choose_cmd = [
     "-w", "42",
     "-s", "16",
     "-f", "JetBrainsMono Nerd Font",
-    "-b", "353058",
-    "-c", "e4d2fd",
+    "-b", bg_color,
+    "-c", text_color,
     "-u",
     "-z",
     "-a",

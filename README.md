@@ -11,11 +11,12 @@ Runs on a MacBook Air M3 13". Should work on other Apple Silicon Macs too, but t
 - `sketchybar/` — the bar. Configured in Lua, with a few small C helpers for CPU/RAM/network stats. Each group of items is its own floating "pill". There's a cava audio visualizer, a CPU graph (click it to see per-core load), RAM, Wi-Fi speed + IP, weather, and the usual stuff.
 - `yabai/` — tiling config. BSP layout, some rules for dialogs and windows that shouldn't tile, plus a couple of scripts (one of them toggles float in a smarter way for apps that open lots of windows).
 - `skhd/` — hotkeys, see below.
-- `kitty/` — terminal. 85% opacity with blur, JetBrains Mono Nerd Font, powerline tabs, my own color theme.
-- `rofi/` — not actual rofi (that's Linux only). It's a small Python launcher I wrote for apps and folders I open often.
-- `wallpaper_gallery/` — 3D Coverflow wallpaper picker written in Swift. Shows the current wallpaper title at the bottom center of the screen in lavender font. Clicking the pill (or pressing `Alt + G`) opens a 3D perspective gallery to browse `~/wallpapers` (and subfolders) and apply them on the fly.
+- `kitty/` — terminal. 85% opacity with blur, JetBrains Mono Nerd Font, powerline tabs, dynamically adapts to wallpaper palette.
+- `borders/` — JankyBorders configuration for active window gradient and subtle inactive borders, synchronized with wallpaper colors.
+- `rofi/` — not actual rofi (that's Linux only). It's a small Python launcher I wrote for apps and folders I open often, styled dynamically to match the current theme.
+- `wallpaper_gallery/` — 3D Coverflow wallpaper picker written in Swift. Shows the current wallpaper title at the bottom center of the screen. Clicking the pill (or pressing `Alt + G`) opens a 3D perspective gallery to browse `~/wallpapers` (and subfolders) with live search and applies wallpapers in real time. Dynamic theme extraction instantly synchronizes Kitty, JankyBorders, Sketchybar, Yabai, and Rofi to match the wallpaper, with guaranteed restoration of the signature lavender theme for Arona.
 - `square_corners/` — an Objective-C tweak that gets rid of rounded window corners. Needs Ammonia or some other DYLD injection thing. Kind of experimental, use at your own risk.
-- `wallpapers/` — the wallpaper from the screenshot.
+- `wallpapers/` — wallpaper collection.
 
 ## Keybinds
 
@@ -63,8 +64,9 @@ Everything is on `Alt` (Option).
 You'll need [Homebrew](https://brew.sh) first. Then:
 
 ```bash
+brew tap FelixKratz/formulae
 brew install koekeishiya/formulae/yabai koekeishiya/formulae/skhd
-brew install felixkratz/formulae/sketchybar cava jq
+brew install felixkratz/formulae/sketchybar borders cava jq
 brew install --cask kitty font-jetbrains-mono-nerd-font
 
 # icon font for sketchybar
@@ -98,7 +100,17 @@ make
 sudo make install
 ```
 
-## Colors
+## Colors & Dynamic Theming
+ 
+All desktop components dynamically adapt to the currently applied wallpaper using real-time pixel color extraction:
+- **Kitty**: Theme colors, cursor, active tab, selection, and terminal background tint.
+- **JankyBorders**: Active window gradient border (`active_color`) and inactive background border (`inactive_color`).
+- **Yabai**: Active window insertion feedback border (`insert_feedback_color`).
+- **Sketchybar**: Pill borders, popups, icons, and accent highlights.
+- **Launcher**: Popup background and accent color.
+
+### Arona Baseline Palette
+For wallpapers matching Arona, the original signature handcrafted palette is strictly preserved:
 
 | | Hex | Used for |
 | :--- | :--- | :--- |

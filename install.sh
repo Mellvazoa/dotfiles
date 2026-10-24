@@ -34,12 +34,14 @@ backup_and_link "$DOTFILES_DIR/kitty"      "$CONFIG_DIR/kitty"
 backup_and_link "$DOTFILES_DIR/yabai"      "$CONFIG_DIR/yabai"
 backup_and_link "$DOTFILES_DIR/skhd"       "$CONFIG_DIR/skhd"
 backup_and_link "$DOTFILES_DIR/rofi"       "$CONFIG_DIR/rofi"
+backup_and_link "$DOTFILES_DIR/borders"    "$CONFIG_DIR/borders"
 
 # 2. Make scripts executable
 chmod +x "$DOTFILES_DIR"/yabai/scripts/* 2>/dev/null || true
 chmod +x "$DOTFILES_DIR"/yabai/auto_fit.py 2>/dev/null || true
 chmod +x "$DOTFILES_DIR"/rofi/launcher.py 2>/dev/null || true
 chmod +x "$DOTFILES_DIR"/sketchybar/sketchybarrc 2>/dev/null || true
+chmod +x "$DOTFILES_DIR"/borders/bordersrc 2>/dev/null || true
 
 # 3. Build sketchybar C helpers if needed
 if [ -d "$DOTFILES_DIR/sketchybar/helpers" ]; then

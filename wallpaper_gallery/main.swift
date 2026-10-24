@@ -25,6 +25,7 @@ struct ThemeColors {
     
     let accentNSColor: NSColor
     let islandNSColor: NSColor
+    let isArona: Bool
 }
 
 class ThemeExtractor {
@@ -34,12 +35,13 @@ class ThemeExtractor {
         accentLightHex: "e4d2fd",
         accentDimHex: "aba0f5",
         lilacHex: "928dfb",
-        islandHex: "131630",
+        islandHex: "14172f",
         textWhiteHex: "f0edfc",
         bg1Hex: "1c203f",
         bg2Hex: "292e59",
         accentNSColor: NSColor(red: 200/255.0, green: 180/255.0, blue: 250/255.0, alpha: 1.0),
-        islandNSColor: NSColor(red: 19/255.0, green: 22/255.0, blue: 48/255.0, alpha: 0.88)
+        islandNSColor: NSColor(red: 20/255.0, green: 23/255.0, blue: 47/255.0, alpha: 0.88),
+        isArona: true
     )
 
     static func extract(from path: String, name: String) -> ThemeColors {
@@ -149,12 +151,14 @@ class ThemeExtractor {
             bg1Hex: bg1Hex,
             bg2Hex: bg2Hex,
             accentNSColor: accentNSColor,
-            islandNSColor: islandNSColor
+            islandNSColor: islandNSColor,
+            isArona: false
         )
     }
 
     static func applyTheme(_ theme: ThemeColors) {
-        let content = """
+        // ── 1. Sketchybar Theme ──────────────────────────────────────────────
+        let sketchybarContent = """
 return {
   black       = 0xff14172f,
   white       = 0xff\(theme.textWhiteHex),
@@ -196,22 +200,307 @@ return {
   end,
 }
 """
-        let home = FileManager.default.homeDirectoryForCurrentUser.path
-        let paths = [
-            "\(home)/.config/sketchybar/colors.lua",
-            "/Users/new/Documents/Antigravity/waybar/sketchybar_src/colors.lua"
-        ]
 
-        for p in paths {
-            try? content.write(toFile: p, atomically: true, encoding: .utf8)
+        // ── 2. Kitty Current Theme ───────────────────────────────────────────
+        let kittyContent: String
+        if theme.isArona {
+            kittyContent = """
+# Soft Lavender - Blue Archive Arona Classroom Theme
+# Matching Sketchybar, Borders and Kitty
+
+# The basic colors
+foreground              #f0edfc
+background              #14172f
+selection_foreground    #14172f
+selection_background    #c8b4fa
+
+# Cursor colors
+cursor                  #e4d2fd
+cursor_text_color       #14172f
+
+# URL underline color when hovering with mouse
+url_color               #c8b4fa
+
+# Kitty window border colors
+active_border_color     #c8b4fa
+inactive_border_color   #292e59
+bell_border_color       #fca5d0
+
+# OS Window titlebar colors
+wayland_titlebar_color  system
+macos_titlebar_color    system
+
+# Tab bar colors
+active_tab_foreground   #14172f
+active_tab_background   #c8b4fa
+inactive_tab_foreground #8a8eb5
+inactive_tab_background #1c203f
+tab_bar_background      #111538
+
+# Colors for marks
+mark1_foreground        #14172f
+mark1_background        #9ccdfb
+mark2_foreground        #14172f
+mark2_background        #c8b4fa
+mark3_foreground        #14172f
+mark3_background        #928dfb
+
+# 16 Terminal Colors
+
+# Black
+color0 #1c203f
+color8 #4d5280
+
+# Red
+color1 #fc5d7c
+color9 #fc7a95
+
+# Green (Harmonious Soft Lavender / Sage tint instead of neon green)
+color2  #aba0f5
+color10 #c8b4fa
+
+# Yellow
+color3  #f6df94
+color11 #f9e9ad
+
+# Blue (Pastel Periwinkle)
+color4  #9ccdfb
+color12 #bce0fd
+
+# Magenta (Soft Lavender / Lilac)
+color5  #c8b4fa
+color13 #e4d2fd
+
+# Cyan (Arona Halo Cyan)
+color6  #8ae1e8
+color14 #a9eff5
+
+# White
+color7  #d8d3f5
+color15 #f5f2fe
+"""
+        } else {
+            kittyContent = """
+# Dynamic Wallpaper Palette (accent: #\(theme.accentHex))
+# Matching Sketchybar, Borders and Kitty
+
+# The basic colors
+foreground              #\(theme.textWhiteHex)
+background              #\(theme.islandHex)
+selection_foreground    #\(theme.islandHex)
+selection_background    #\(theme.accentHex)
+
+# Cursor colors
+cursor                  #\(theme.accentLightHex)
+cursor_text_color       #\(theme.islandHex)
+
+# URL underline color when hovering with mouse
+url_color               #\(theme.accentHex)
+
+# Kitty window border colors
+active_border_color     #\(theme.accentHex)
+inactive_border_color   #\(theme.bg2Hex)
+bell_border_color       #\(theme.accentLightHex)
+
+# OS Window titlebar colors
+wayland_titlebar_color  system
+macos_titlebar_color    system
+
+# Tab bar colors
+active_tab_foreground   #\(theme.islandHex)
+active_tab_background   #\(theme.accentHex)
+inactive_tab_foreground #\(theme.accentDimHex)
+inactive_tab_background #\(theme.bg1Hex)
+tab_bar_background      #\(theme.islandHex)
+
+# Colors for marks
+mark1_foreground        #\(theme.islandHex)
+mark1_background        #\(theme.accentLightHex)
+mark2_foreground        #\(theme.islandHex)
+mark2_background        #\(theme.accentHex)
+mark3_foreground        #\(theme.islandHex)
+mark3_background        #\(theme.lilacHex)
+
+# 16 Terminal Colors
+
+# Black
+color0 #\(theme.bg1Hex)
+color8 #\(theme.bg2Hex)
+
+# Red
+color1 #fc5d7c
+color9 #fc7a95
+
+# Green
+color2  #a3e49b
+color10 #baf0b3
+
+# Yellow
+color3  #f6df94
+color11 #f9e9ad
+
+# Blue
+color4  #9ccdfb
+color12 #bce0fd
+
+# Magenta (Accent)
+color5  #\(theme.accentHex)
+color13 #\(theme.accentLightHex)
+
+# Cyan (Lilac / Secondary)
+color6  #\(theme.lilacHex)
+color14 #\(theme.accentLightHex)
+
+# White
+color7  #\(theme.accentDimHex)
+color15 #\(theme.textWhiteHex)
+"""
         }
 
-        // Asynchronously reload sketchybar
+        // ── 3. Borders Config ────────────────────────────────────────────────
+        let bordersContent: String
+        if theme.isArona {
+            bordersContent = """
+#!/bin/bash
+
+options=(
+  "style=round"
+  "hidpi=on"
+  "ax_focus=on"
+  "active_color=gradient(top_left=0xffe4d2fd,bottom_right=0xff928dfb)"
+  "inactive_color=0x221d2356"
+  "width=4.0"
+  "order=above"
+)
+
+borders "${options[@]}"
+"""
+        } else {
+            bordersContent = """
+#!/bin/bash
+
+options=(
+  "style=round"
+  "hidpi=on"
+  "ax_focus=on"
+  "active_color=gradient(top_left=0xff\(theme.accentLightHex),bottom_right=0xff\(theme.accentHex))"
+  "inactive_color=0x22\(theme.bg2Hex)"
+  "width=4.0"
+  "order=above"
+)
+
+borders "${options[@]}"
+"""
+        }
+
+        // ── 4. Rofi / Choose Colors JSON ─────────────────────────────────────
+        let rofiContent = """
+{
+  "bg": "\(theme.bg2Hex)",
+  "accent_light": "\(theme.accentLightHex)",
+  "accent": "\(theme.accentHex)"
+}
+"""
+
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        let ws = "/Users/new/Documents/Antigravity/waybar"
+
+        // Write Sketchybar
+        let sketchybarPaths = [
+            "\(home)/.config/sketchybar/colors.lua",
+            "\(ws)/sketchybar_src/colors.lua"
+        ]
+        for p in sketchybarPaths {
+            try? sketchybarContent.write(toFile: p, atomically: true, encoding: .utf8)
+        }
+
+        // Write Kitty
+        let kittyPaths = [
+            "\(home)/.config/kitty/current-theme.conf",
+            "\(ws)/kitty/current-theme.conf"
+        ]
+        for p in kittyPaths {
+            try? kittyContent.write(toFile: p, atomically: true, encoding: .utf8)
+        }
+
+        // Write Borders
+        let bordersPaths = [
+            "\(home)/.config/borders/bordersrc",
+            "\(ws)/borders/bordersrc"
+        ]
+        for p in bordersPaths {
+            try? bordersContent.write(toFile: p, atomically: true, encoding: .utf8)
+            try? FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: p)
+        }
+
+        // Write Rofi
+        let rofiPaths = [
+            "\(home)/.config/rofi/colors.json",
+            "\(ws)/rofi/colors.json"
+        ]
+        for p in rofiPaths {
+            try? rofiContent.write(toFile: p, atomically: true, encoding: .utf8)
+        }
+
+        // Update Yabai yabairc
+        let yabaiPaths = [
+            "\(home)/.config/yabai/yabairc",
+            "\(ws)/yabai/yabairc"
+        ]
+        for p in yabaiPaths {
+            if let existing = try? String(contentsOfFile: p, encoding: .utf8) {
+                if let regex = try? NSRegularExpression(pattern: "insert_feedback_color\\s+0xff[0-9a-fA-F]+") {
+                    let range = NSRange(location: 0, length: existing.utf16.count)
+                    let updated = regex.stringByReplacingMatches(in: existing, options: [], range: range, withTemplate: "insert_feedback_color      0xff\(theme.accentHex)")
+                    try? updated.write(toFile: p, atomically: true, encoding: .utf8)
+                }
+            }
+        }
+
+        // ── 5. Asynchronously reload external utilities ───────────────────────
         DispatchQueue.global(qos: .utility).async {
-            let task = Process()
-            task.executableURL = URL(fileURLWithPath: "/usr/bin/env")
-            task.arguments = ["sketchybar", "--reload"]
-            try? task.run()
+            // 1. Reload Sketchybar
+            let task1 = Process()
+            task1.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+            task1.arguments = ["sketchybar", "--reload"]
+            try? task1.run()
+            task1.waitUntilExit()
+
+            // 2. Reload Kitty without quitting
+            let task2 = Process()
+            task2.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+            task2.arguments = ["killall", "-SIGUSR1", "kitty"]
+            try? task2.run()
+            task2.waitUntilExit()
+
+            // 3. Restart Borders with new gradient/inactive colors
+            let task3 = Process()
+            task3.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+            task3.arguments = ["killall", "borders"]
+            try? task3.run()
+            task3.waitUntilExit()
+
+            // Ensure borders process is alive
+            usleep(150_000)
+            let checkTask = Process()
+            checkTask.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+            checkTask.arguments = ["pgrep", "-x", "borders"]
+            let pipe = Pipe()
+            checkTask.standardOutput = pipe
+            try? checkTask.run()
+            checkTask.waitUntilExit()
+            if checkTask.terminationStatus != 0 {
+                let startTask = Process()
+                startTask.executableURL = URL(fileURLWithPath: "\(home)/.config/borders/bordersrc")
+                try? startTask.run()
+            }
+
+            // 4. Update Yabai insert_feedback_color dynamically
+            let task4 = Process()
+            task4.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+            task4.arguments = ["yabai", "-m", "config", "insert_feedback_color", "0xff\(theme.accentHex)"]
+            try? task4.run()
+            task4.waitUntilExit()
         }
     }
 }
@@ -783,6 +1072,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if !currentPath.isEmpty {
             let theme = ThemeExtractor.extract(from: currentPath, name: currentName)
             pillWindow.updateColors(accent: theme.accentNSColor, island: theme.islandNSColor)
+            ThemeExtractor.applyTheme(theme)
         }
 
         // Listen for IPC Notifications (e.g. from hotkeys / skhd)
