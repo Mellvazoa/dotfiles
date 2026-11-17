@@ -1,9 +1,21 @@
 #!/usr/bin/env sh
 
 sudo yabai --load-sa
-yabai -m signal --add event=dock_did_restart action="sudo yabai --load-sa"
 
-# --- Основные настройки yabai ---
+# ── Сигналы с метками (при перезагрузке yabairc старые удаляются без дублей) ───
+for lbl in dock_sa zoom_cleanup zoom_focus zoom_space zoom_min zoom_demin auto_fit window_guard; do
+  yabai -m signal --remove "$lbl" 2>/dev/null
+done
+
+yabai -m signal --add label=dock_sa      event=dock_did_restart   action="sudo yabai --load-sa"
+yabai -m signal --add label=zoom_cleanup event=window_destroyed   action="~/.config/yabai/scripts/smart_zoom.py --cleanup"
+yabai -m signal --add label=zoom_focus   event=window_focused     action="~/.config/yabai/scripts/smart_zoom.py --ensure-opacity"
+yabai -m signal --add label=zoom_space   event=space_changed      action="~/.config/yabai/scripts/smart_zoom.py --cleanup"
+yabai -m signal --add label=zoom_min     event=window_minimized   action="~/.config/yabai/scripts/smart_zoom.py --cleanup"
+yabai -m signal --add label=zoom_demin   event=window_deminimized action="~/.config/yabai/scripts/smart_zoom.py --deminimized"
+yabai -m signal --add label=window_guard event=window_created     action="~/.config/yabai/scripts/window_guard.py"
+
+# ── Основные настройки yabai ───────────────────────────────────────────────────
 yabai -m config external_bar               all:40:0       \
                 mouse_follows_focus        off            \
                 focus_follows_mouse        off            \
@@ -11,12 +23,11 @@ yabai -m config external_bar               all:40:0       \
                 window_placement           second_child   \
                 window_shadow              float          \
                 window_opacity             on             \
-                window_opacity_duration    0.2            \
+                window_opacity_duration    0.0            \
                 active_window_opacity      1.0            \
-                normal_window_opacity      0.70           \
-                window_animation_duration  0.15           \
-                window_animation_easing    ease_out_quint \
-                insert_feedback_color      0xfffa89af     \
+                normal_window_opacity      1.0            \
+                window_animation_duration  0.0            \
+                insert_feedback_color      0xfffa9a89     \
                 split_ratio                0.50           \
                 auto_balance               on             \
                 mouse_modifier             fn             \
@@ -30,41 +41,45 @@ yabai -m config external_bar               all:40:0       \
                 right_padding              2              \
                 window_gap                 4
 
-# --- ГЛОБАЛЬНЫЕ ПРАВИЛА ДЛЯ ДИАЛОГОВ И ПОПАПОВ ---
-# Все диалоговые, системные окна, выбор файлов и попапы открываются плавающими
-yabai -m rule --add subrole="^AXDialog$" manage=off
-yabai -m rule --add subrole="^AXSystemDialog$" manage=off
-yabai -m rule --add role="^AXSheet$" manage=off
+# ── Сброс всех старых правил перед добавлением ─────────────────────────────────
+while yabai -m rule --remove 0 2>/dev/null; do :; done
 
-# Окна настроек, информации о программе, сохранения и открытия файлов
-yabai -m rule --add title="^(Settings|Preferences|Настройки|About.*|General|Select .*|Open .*|Save .*|.*(Open|Save|Choose|Select|Открыть|Сохранить|Выбрать|Открывается сайт).*)$" manage=off
+# 1. Прозрачность стандартных окон (Telegram и браузеры)
+yabai -m rule --add label=op_telegram app="^Telegram$" subrole="^AXStandardWindow$" opacity=0.85
+yabai -m rule --add label=op_browsers app="^(Brave Browser|Safari|Google Chrome|Arc|Zen Browser|Firefox|Vivaldi|Edge)$" subrole="^AXStandardWindow$" opacity=0.78
 
-# --- ПРИЛОЖЕНИЯ С МНОЖЕСТВОМ ПОД-ОКОН / JAVA SWING (GHIDRA) ---
-# Все окна Ghidra и Java по умолчанию открываются в float
-yabai -m rule --add app="^(Ghidra|ghidra.*|java)$" manage=off
-yabai -m rule --add app="^(Ghidra|ghidra.*)$" title="^(CodeBrowser.*|Debugger.*|Emulator.*|Version Tracking.*)$" manage=off grid=1:1:0:0:1:1
+# 2. Специальные приложения и окна настроек
+# Все плавающие окна используют единый sub-layer=above, чтобы свободно меняться уровнями при клике
+yabai -m rule --add label=ghidra_all  app="^(Ghidra|ghidra.*|java)$" manage=off sub-layer=above
+yabai -m rule --add label=ghidra_main app="^(Ghidra|ghidra.*)$" title="^(CodeBrowser.*|Debugger.*|Emulator.*|Version Tracking.*)$" manage=off grid=1:1:0:0:1:1 sub-layer=above
+yabai -m rule --add label=ide_prefs   app="^Antigravity IDE$" title="^(Settings|Preferences|Preferences:.*)$" manage=off grid=10:10:2:1:6:8 sub-layer=above opacity=1.0
+yabai -m rule --add label=safari_pref app="^Safari$" title="^(General|(Tab|Password|Website|Extension)s|AutoFill|Se(arch|curity)|Privacy|Advance)$" manage=off sub-layer=above
+yabai -m rule --add label=finder      app="^Finder$" manage=off grid=10:10:2:1:6:8 sub-layer=above opacity=1.0
+yabai -m rule --add label=sys_prefs   app="^(System Preferences|System Settings|Системные настройки)$" manage=off grid=10:10:1:1:8:8 sub-layer=above opacity=1.0
+yabai -m rule --add label=calculator  app="^(Calculator|Калькулятор)$" manage=off grid=6:6:2:2:2:3 sub-layer=above
+yabai -m rule --add label=float_apps  app="^(LuLu|Software Update|Обновление ПО|Dictionary|Словарь|VLC|zoom\.us|Photo Booth|Archive Utility|Утилита архивации|Python|LibreOffice|App Store|Steam|Alfred|Activity Monitor|Мониторинг системы|Font Book|Шрифты|ColorSync Utility|Утилита ColorSync|Keychain Access|Связка ключей|Audio MIDI Setup|Настройка MIDI-Audio|Migration Assistant|Ассистент миграции|Shortcuts|Быстрые команды|Weather|Погода|Clock|Часы|Stocks|Акции|Maps|Карты|Reminders|Напоминания|Notes|Заметки|Music|Музыка|Podcasts|Подкасты|TV|Books|Книги|ProxyBridge)$" manage=off sub-layer=above
+yabai -m rule --add label=wallpaper   app="^wallpaper_gallery$" manage=off
+yabai -m rule --add label=tg_music    app="^tg_music$" manage=off
+yabai -m rule --add label=yazi_picker app="^kitty$" title="^Yazi Picker$" manage=off grid=10:10:2:1:6:8 sub-layer=above opacity=0.96
 
-# Antigravity IDE вспомогательные окна и настройки
-yabai -m rule --add app="^Antigravity IDE$" title="^(Settings|Preferences|Preferences:.*|Antigravity IDE)$" manage=off
+# 3. Системные диалоги, всплывающие окна и индикаторы macOS
+yabai -m rule --add label=open_save_panel app=".*([Oo]pen and [Ss]ave|[Oo]penAndSave|[Oo]penAndSavePanelService).*" manage=off sub-layer=above opacity=1.0
+yabai -m rule --add label=save_titles     title="^(Сохранить|Save|Сохранить как.*|Save As.*|Открыть|Open)$" manage=off sub-layer=above opacity=1.0
+yabai -m rule --add label=cursor_ui       app="^(CursorUIViewService|TextInputSwitcher)$" manage=off opacity=0.0
+yabai -m rule --add label=dialog_subroles subrole="^(AXDialog|AXSystemDialog|AXFloatingWindow)$" manage=off sub-layer=above opacity=1.0
+yabai -m rule --add label=dialog_roles    role="^(AXDialog|AXSheet|AXPopover|AXSystemFloatingWindow)$" manage=off sub-layer=above opacity=1.0
 
-# Системные и утилитарные приложения, открывающиеся аккуратно по центру
-yabai -m rule --add app="^(System Preferences|System Settings|Системные настройки)$" manage=off grid=10:10:1:1:8:8
-yabai -m rule --add app="^(Calculator|Калькулятор)$" manage=off grid=6:6:2:2:2:3
-yabai -m rule --add app="^(Просмотр|Preview)$" manage=off grid=12:12:1:1:10:10
-
-# Другие системные приложения, которым противопоказан тайлинг
-yabai -m rule --add app="^(LuLu|Software Update|Обновление ПО|Dictionary|Словарь|VLC|zoom.us|Photo Booth|Archive Utility|Утилита архивации|Python|LibreOffice|App Store|Steam|Alfred|Activity Monitor|Мониторинг системы|Finder|Font Book|Шрифты|ColorSync Utility|Утилита ColorSync|Keychain Access|Связка ключей|Audio MIDI Setup|Настройка MIDI-Audio|Migration Assistant|Ассистент миграции|Shortcuts|Быстрые команды|Weather|Погода|Clock|Часы|Stocks|Акции|Maps|Карты|Reminders|Напоминания|Notes|Заметки|Music|Музыка|Podcasts|Подкасты|TV|Books|Книги|wallpaper_gallery)$" manage=off
-yabai -m rule --add label="Safari" app="^Safari$" title="^(General|(Tab|Password|Website|Extension)s|AutoFill|Se(arch|curity)|Privacy|Advance)$" manage=off
-
-# --- ПРАВИЛА ПРОЗРАЧНОСТИ ПРИЛОЖЕНИЙ ---
-yabai -m rule --add app="^Telegram$" opacity=0.85
-yabai -m rule --add app="^Brave Browser$" opacity=0.85
+# Применяем правила к открытым окнам
+yabai -m rule --apply
 
 # Основной режим тайлинга
 yabai -m config layout bsp
 
-# Автозапуск виджета обоев (плашка внизу экрана + 3D Coverflow галерея)
+# Автозапуск виджета обоев и плеера Telegram-музыки
 killall wallpaper_gallery 2>/dev/null || true
-"$HOME/.config/yabai/bin/wallpaper_gallery" 2>/dev/null || "$HOME/Documents/Antigravity/waybar/wallpaper_gallery/bin/wallpaper_gallery" &
+nohup "$HOME/Documents/Antigravity/waybar/wallpaper_gallery/bin/wallpaper_gallery" >/dev/null 2>&1 &
+
+killall tg_music 2>/dev/null || true
+nohup "$HOME/.local/bin/tg_music" >/dev/null 2>&1 &
 
 echo "yabai configuration loaded.."

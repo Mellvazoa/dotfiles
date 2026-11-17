@@ -146,7 +146,7 @@ local popup_wind = sbar.add("item", {
 
 -- ── Weather update logic ──────────────────────────────────────────────────────
 local function update_weather()
-  local cmd = [[curl -s --max-time 4 "wttr.in/?format=j1&lang=ru" | jq -r '
+  local cmd = [[data=$(curl -sf --max-time 4 "wttr.in/?format=j1&lang=ru" 2>/dev/null) && printf '%s' "$data" | jq -r '
     .nearest_area[0].areaName[0].value,
     .current_condition[0].temp_C,
     .current_condition[0].weatherCode,
@@ -154,7 +154,7 @@ local function update_weather()
     .current_condition[0].FeelsLikeC,
     .current_condition[0].humidity,
     .current_condition[0].windspeedKmph
-  ']]
+  ' 2>/dev/null]]
 
   sbar.exec(cmd, function(res)
     if not res or res == "" then return end

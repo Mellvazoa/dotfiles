@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "Frosted Glass Web",
+  "version": "1.0",
+  "description": "Applies frosted glass / translucent dark backgrounds to web apps matching system theme",
+  "content_scripts": [
+    {
+      "matches": [
+        "*://chat.deepseek.com/*",
+        "*://chatgpt.com/*"
+      ],
+      "css": ["glass.css"],
+      "run_at": "document_start"
+    }
+  ]
+}

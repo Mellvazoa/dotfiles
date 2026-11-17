@@ -1,5 +1,22 @@
 #!/usr/bin/env lua
 
+-- Guarantee only a single Lua sketchybarrc event loop is running
+local f = io.popen("ps -o ppid= -p $$")
+if f then
+  local my_pid = f:read("*a"):gsub("%s+", "")
+  f:close()
+  local p = io.popen("pgrep -f '[l]ua .*/sketchybarrc'")
+  if p then
+    for line in p:lines() do
+      local pid = line:gsub("%s+", "")
+      if pid ~= "" and pid ~= my_pid then
+        os.execute("kill -9 " .. pid .. " >/dev/null 2>&1")
+      end
+    end
+    p:close()
+  end
+end
+
 -- Load the sketchybar-package and prepare the helper binaries
 require("helpers")
 require("init")

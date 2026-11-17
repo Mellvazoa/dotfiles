@@ -1,0 +1,58 @@
+/* Glassmorphism theme for DeepSeek and dark web apps */
+html, body, #root, #app, [class*="layout"], [class*="container-"] {
+    background-color: transparent !important;
+    background: transparent !important;
+}
+
+/* Сайдбар слева */
+aside, nav, div[class*="sidebar"], div[class*="drawer"] {
+    background-color: rgba(24, 18, 32, 0.72) !important;
+    backdrop-filter: blur(24px) !important;
+    -webkit-backdrop-filter: blur(24px) !important;
+    border-right: 1px solid rgba(187, 160, 227, 0.12) !important;
+}
+
+/* Активный диалог в сайдбаре */
+div[class*="selected"], div[class*="active"], div[class*="item"]:hover {
+    background-color: rgba(187, 160, 227, 0.15) !important;
+    border-radius: 8px !important;
+}
+
+/* Центральная область сообщений */
+main, div[class*="chat-session"], div[class*="conversation"] {
+    background-color: rgba(24, 18, 32, 0.60) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+}
+
+/* Блоки сообщений */
+div[class*="message-content"], div[class*="bubble"] {
+    background-color: rgba(33, 25, 45, 0.50) !important;
+    border-radius: 12px !important;
+    border: 1px solid rgba(187, 160, 227, 0.10) !important;
+}
+
+/* Блоки кода */
+pre, code, div[class*="code-block"] {
+    background-color: rgba(15, 11, 20, 0.85) !important;
+    border: 1px solid rgba(187, 160, 227, 0.20) !important;
+    font-family: "JetBrainsMono Nerd Font", monospace !important;
+}
+
+/* Поле ввода сообщения */
+div[class*="chat-input"], div[class*="input-wrap"], textarea {
+    background-color: rgba(33, 25, 45, 0.82) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border: 1px solid rgba(187, 160, 227, 0.28) !important;
+    color: #f4f2f6 !important;
+}
+
+/* Скроллбары */
+::-webkit-scrollbar {
+    width: 6px !important;
+}
+::-webkit-scrollbar-thumb {
+    background: rgba(187, 160, 227, 0.25) !important;
+    border-radius: 4px !important;
+}

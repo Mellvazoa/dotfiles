@@ -1,0 +1,7 @@
+[mgr]
+prepend_keymap = [
+  { on = "Y",          run = "plugin clipcopy",                    desc = "Copy file(s) to macOS clipboard (Cmd+V)" },
+  { on = "<C-y>",      run = [ "plugin clipcopy-quit", "quit" ],   desc = "Copy file(s) to macOS clipboard & quit" },
+  { on = [ "g", "y" ], run = [ "plugin clipcopy-quit", "quit" ],   desc = "Vim-style copy file(s) & quit" },
+  { on = "U",          run = "unyank",                             desc = "Cancel the yank status" },
+]

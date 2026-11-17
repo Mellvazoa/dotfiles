@@ -1,0 +1,55 @@
+# Unified theme template targets for theme.py
+# Paths support "~" and "{repo}" (root of this dotfiles repo).
+
+[sketchybar]
+input = "sketchybar-colors.lua"
+outputs = [
+  "~/.config/sketchybar/colors.lua",
+  "{repo}/sketchybar_src/colors.lua",
+]
+reload = ["sketchybar", "--reload"]
+
+[kitty]
+input = "kitty.conf"
+outputs = [
+  "~/.config/kitty/current-theme.conf",
+  "{repo}/kitty/current-theme.conf",
+]
+reload = ["killall", "-SIGUSR1", "kitty"]
+
+[borders]
+input = "bordersrc"
+outputs = [
+  "~/.config/borders/bordersrc",
+  "{repo}/borders/bordersrc",
+]
+mode = 0o755
+reload = ["~/.config/borders/bordersrc"]
+
+[rofi]
+input = "rofi-colors.json"
+outputs = [
+  "~/.config/rofi/colors.json",
+  "{repo}/rofi/colors.json",
+]
+
+[btop]
+input = "btop.theme"
+outputs = [
+  "~/.config/btop/themes/dynamic.theme",
+]
+reload = ["pkill", "-USR2", "-x", "btop"]
+
+[cava]
+input = "cava-theme"
+outputs = [
+  "~/.config/cava/themes/dynamic",
+]
+reload = ["pkill", "-USR2", "-x", "cava"]
+
+[telegram]
+input = "telegram.palette"
+outputs = [
+  "~/.config/theme/Kitty.palette",
+  "{repo}/telegram_theme/Kitty.palette",
+]

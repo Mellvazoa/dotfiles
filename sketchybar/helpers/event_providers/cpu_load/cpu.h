@@ -1,5 +1,7 @@
 #include <mach/mach.h>
 #include <stdbool.h>
+#include <stdint.h>
+#include <string.h>
 #include <unistd.h>
 #include <stdio.h>
 
@@ -16,6 +18,7 @@ struct cpu {
 };
 
 static inline void cpu_init(struct cpu* cpu) {
+  memset(cpu, 0, sizeof(*cpu));
   cpu->host = mach_host_self();
   cpu->count = HOST_CPU_LOAD_INFO_COUNT;
   cpu->has_prev_load = false;
@@ -42,15 +45,19 @@ static inline void cpu_update(struct cpu* cpu) {
     uint32_t delta_idle = cpu->load.cpu_ticks[CPU_STATE_IDLE]
                           - cpu->prev_load.cpu_ticks[CPU_STATE_IDLE];
 
-    cpu->user_load = (double)delta_user / (double)(delta_system
-                                                     + delta_user
-                                                     + delta_idle) * 100.0;
+    uint64_t total_ticks = (uint64_t)delta_system
+                           + (uint64_t)delta_user
+                           + (uint64_t)delta_idle;
 
-    cpu->sys_load = (double)delta_system / (double)(delta_system
-                                                      + delta_user
-                                                      + delta_idle) * 100.0;
-
-    cpu->total_load = cpu->user_load + cpu->sys_load;
+    if (total_ticks > 0) {
+      cpu->user_load = (double)delta_user / (double)total_ticks * 100.0;
+      cpu->sys_load = (double)delta_system / (double)total_ticks * 100.0;
+      cpu->total_load = cpu->user_load + cpu->sys_load;
+    } else {
+      cpu->user_load = 0;
+      cpu->sys_load = 0;
+      cpu->total_load = 0;
+    }
   }
 
   cpu->prev_load = cpu->load;

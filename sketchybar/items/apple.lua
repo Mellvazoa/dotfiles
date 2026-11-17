@@ -21,7 +21,14 @@ local apple = sbar.add("item", "apple", {
   background    = { color = colors.transparent },
   padding_left  = 0,
   padding_right = 0,
-  click_script  = "osascript -e 'tell application \"System Events\" to tell process \"Finder\" to click menu bar item 1 of menu bar 1'",
 })
+
+apple:subscribe("mouse.clicked", function(env)
+  if env and env.BUTTON == "right" then
+    sbar.exec("osascript -e 'tell application \"System Events\" to tell process \"Finder\" to click menu bar item 1 of menu bar 1'")
+  else
+    sbar.exec("~/.local/bin/powermenu --toggle")
+  end
+end)
 
 island({ apple.name }, "apple.island")

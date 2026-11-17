@@ -1,7 +1,8 @@
-local colors   = require("colors")
-local icons    = require("icons")
-local settings = require("settings")
-local island   = require("helpers.island")
+local colors       = require("colors")
+local icons        = require("icons")
+local settings     = require("settings")
+local island       = require("helpers.island")
+local compact_mode = require("helpers.compact_mode")
 
 -- ── Menus island (app menu bar items) ────────────────────────────────────────
 local menu_watcher    = sbar.add("item", { drawing = false, updates = false })
@@ -109,6 +110,7 @@ local function update_menus()
     end
 
     menu_notch_spacer:set({ drawing = has_right_items })
+    compact_mode.set(has_right_items)
   end)
 end
 
@@ -121,6 +123,7 @@ space_menu_swap:subscribe("swap_menus_and_spaces", function()
     sbar.set("/menu\\..*/", { drawing = false })
     sbar.set("/space\\..*/", { drawing = true })
     sbar.set("front_app", { drawing = true })
+    compact_mode.set(false)
   else
     menu_watcher:set({ updates = true })
     sbar.set("/space\\..*/", { drawing = false })

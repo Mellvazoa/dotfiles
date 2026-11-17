@@ -1,0 +1,5 @@
+{
+  "bg": "{{bg2_hex}}",
+  "accent_light": "{{accent_light_hex}}",
+  "accent": "{{accent_hex}}"
+}

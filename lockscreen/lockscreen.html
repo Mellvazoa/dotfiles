@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lock Screen</title>
+<style>
+  :root {
+    --accent: #fa898e;
+    --text-white: #f6f2f3;
+    --text-muted: rgba(246, 242, 243, 0.72);
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  body {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background-color: #0b0d14;
+    font-family: 'JetBrainsMono Nerd Font', 'JetBrainsMono NF', 'JetBrains Mono', monospace;
+    color: var(--text-white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Clear, bright wallpaper with gentle blur so art is fully visible */
+  #wallpaper-bg {
+    position: fixed;
+    inset: -30px;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    filter: blur(12px) brightness(0.92) saturate(1.05);
+    transform: scale(1.04);
+    z-index: 0;
+    transition: background-image 0.4s ease;
+  }
+
+  /* Subtle vignette, almost clear in center */
+  #vignette {
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0.0) 0%, rgba(0, 0, 0, 0.28) 100%);
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  /* Main content layout */
+  #main-container {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    height: 74vh;
+    max-height: 800px;
+    width: 100%;
+    pointer-events: auto;
+  }
+
+  /* Top Section: Clock & Date matching bar font */
+  .header-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 15px;
+  }
+
+  #clock {
+    font-family: 'JetBrainsMono Nerd Font', 'JetBrainsMono NF', 'JetBrains Mono', monospace;
+    font-size: 82px;
+    font-weight: 500;
+    letter-spacing: -2px;
+    text-shadow: 0 4px 20px rgba(0, 0, 0, 0.55);
+    line-height: 1;
+    color: var(--text-white);
+  }
+
+  #date {
+    font-family: 'JetBrainsMono Nerd Font', 'JetBrainsMono NF', 'JetBrains Mono', monospace;
+    font-size: 15px;
+    font-weight: 400;
+    color: var(--text-muted);
+    margin-top: 12px;
+    letter-spacing: 0.5px;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+  }
+
+  /* Center Section: Input field & layout */
+  .auth-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* Completely transparent pill input without shadow, pure outline */
+  .pill-input-box {
+    width: 290px;
+    height: 44px;
+    border-radius: 22px;
+    background: transparent !important;
+    border: 1.5px solid var(--accent);
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    transition: border-color 0.2s;
+    cursor: text;
+  }
+
+  .pill-input-box:focus-within {
+    border-color: var(--accent);
+    box-shadow: none !important;
+  }
+
+  .pill-input-box.error {
+    animation: shake 0.42s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+    border-color: #fc5d7c !important;
+    box-shadow: none !important;
+  }
+
+  .pill-input-box.success {
+    border-color: #a3e49b !important;
+    box-shadow: none !important;
+  }
+
+  @keyframes shake {
+    10%, 90% { transform: translate3d(-3px, 0, 0); }
+    20%, 80% { transform: translate3d(5px, 0, 0); }
+    30%, 50%, 70% { transform: translate3d(-6px, 0, 0); }
+    40%, 60% { transform: translate3d(6px, 0, 0); }
+  }
+
+  #password-input {
+    width: 85%;
+    height: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text-white);
+    font-size: 20px;
+    text-align: center;
+    letter-spacing: 5px;
+    caret-color: var(--accent);
+    font-family: 'JetBrainsMono Nerd Font', 'JetBrainsMono NF', monospace;
+  }
+
+  #layout-code {
+    margin-top: 12px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    letter-spacing: 1.5px;
+    text-transform: lowercase;
+    font-family: 'JetBrainsMono Nerd Font', 'JetBrainsMono NF', monospace;
+  }
+
+  /* Lower Section: Media player (hidden unless actively playing) */
+  .media-section {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 25px;
+  }
+
+  #media-info {
+    font-size: 13.5px;
+    font-weight: 400;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    letter-spacing: 0.2px;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.55);
+    max-width: 520px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-family: 'JetBrainsMono Nerd Font', 'JetBrainsMono NF', monospace;
+  }
+
+  #media-note {
+    font-size: 14px;
+    color: var(--accent);
+  }
+
+  .media-controls {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    color: rgba(246, 242, 243, 0.85);
+    font-size: 16px;
+    font-family: 'JetBrainsMono Nerd Font', monospace;
+  }
+
+  .media-btn {
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 8px;
+    transition: transform 0.15s, color 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .media-btn:hover {
+    color: var(--accent);
+    transform: scale(1.15);
+  }
+
+  .media-btn:active {
+    transform: scale(0.95);
+  }
+
+  /* Avatar in bottom right */
+  #avatar-container {
+    position: fixed;
+    right: 40px;
+    bottom: 40px;
+    z-index: 10;
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    border: 2px solid var(--accent);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    overflow: hidden;
+    background: #14172f;
+    cursor: pointer;
+    transition: transform 0.2s;
+  }
+
+  #avatar-container:hover {
+    transform: scale(1.08);
+  }
+
+  #avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+</style>
+</head>
+<body>
+
+<div id="wallpaper-bg"></div>
+<div id="vignette"></div>
+
+<div id="main-container">
+  <!-- Top: Clock & Date -->
+  <div class="header-section">
+    <div id="clock">17:16</div>
+    <div id="date">Sunday, 09 August 2026</div>
+  </div>
+
+  <!-- Center: Input field with layout underneath -->
+  <div class="auth-section">
+    <div class="pill-input-box" id="pill-box" onclick="focusInput()">
+      <input type="password" id="password-input" autofocus autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+    </div>
+    <div id="layout-code">en</div>
+  </div>
+
+  <!-- Lower Center: Media player (only shown when actively playing) -->
+  <div class="media-section" id="media-section">
+    <div id="media-info">
+      <span id="media-note">♪</span>
+      <span id="media-text"></span>
+    </div>
+    <div class="media-controls">
+      <div class="media-btn" onclick="mediaAction('prev')" title="Previous Track">‹</div>
+      <div class="media-btn" id="play-pause-btn" onclick="mediaAction('play_pause')" title="Play / Pause">⏸</div>
+      <div class="media-btn" onclick="mediaAction('next')" title="Next Track">›</div>
+    </div>
+  </div>
+</div>
+
+<!-- Bottom Right: Avatar -->
+<div id="avatar-container" onclick="requestTouchID()" title="Click to use Touch ID">
+  <img id="avatar-img" src="" alt="Avatar" />
+</div>
+
+<script>
+  const passwordInput = document.getElementById('password-input');
+  const pillBox = document.getElementById('pill-box');
+  const clockEl = document.getElementById('clock');
+  const dateEl = document.getElementById('date');
+  const layoutEl = document.getElementById('layout-code');
+  const mediaSection = document.getElementById('media-section');
+  const mediaTextEl = document.getElementById('media-text');
+  const playPauseBtn = document.getElementById('play-pause-btn');
+  const wallpaperBg = document.getElementById('wallpaper-bg');
+  const avatarImg = document.getElementById('avatar-img');
+
+  function focusInput() {
+    passwordInput.focus();
+  }
+
+  window.addEventListener('click', (e) => {
+    if (!e.target.closest('.media-btn') && !e.target.closest('#avatar-container')) {
+      focusInput();
+    }
+  });
+
+  window.addEventListener('keydown', (e) => {
+    focusInput();
+    if (e.key === 'Enter') {
+      submitPassword();
+    }
+  });
+
+  function submitPassword() {
+    const pwd = passwordInput.value;
+    if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.lockscreen) {
+      window.webkit.messageHandlers.lockscreen.postMessage({
+        action: 'verifyPassword',
+        password: pwd
+      });
+    }
+  }
+
+  function mediaAction(type) {
+    if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.lockscreen) {
+      window.webkit.messageHandlers.lockscreen.postMessage({
+        action: 'media',
+        cmd: type
+      });
+    }
+  }
+
+  function requestTouchID() {
+    if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.lockscreen) {
+      window.webkit.messageHandlers.lockscreen.postMessage({
+        action: 'touchID'
+      });
+    }
+  }
+
+  // ── Exposed API for Swift Host ─────────────────────────────────────────────
+  window.authFailed = function() {
+    pillBox.classList.remove('success');
+    pillBox.classList.add('error');
+    passwordInput.value = '';
+    setTimeout(() => {
+      pillBox.classList.remove('error');
+      focusInput();
+    }, 450);
+  };
+
+  window.authSuccess = function() {
+    pillBox.classList.remove('error');
+    pillBox.classList.add('success');
+  };
+
+  window.setLayout = function(code) {
+    layoutEl.textContent = (code || 'en').toLowerCase();
+  };
+
+  window.setMedia = function(title, artist, isPlaying) {
+    // Only display media widget if actively playing
+    if (!isPlaying || !title || title.trim() === '') {
+      mediaSection.style.display = 'none';
+      return;
+    }
+
+    mediaSection.style.display = 'flex';
+    let label = '';
+    if (artist && title) {
+      label = `${title} - ${artist}`;
+    } else {
+      label = title || artist;
+    }
+    mediaTextEl.textContent = label;
+    playPauseBtn.textContent = '⏸';
+  };
+
+  window.setTheme = function(accentHex, islandHex, textWhiteHex) {
+    if (accentHex) {
+      document.documentElement.style.setProperty('--accent', accentHex);
+    }
+    if (textWhiteHex) {
+      document.documentElement.style.setProperty('--text-white', textWhiteHex);
+    }
+  };
+
+  window.setWallpaper = function(uri) {
+    if (uri) {
+      if (uri.startsWith('data:') || uri.startsWith('file://')) {
+        wallpaperBg.style.backgroundImage = `url("${uri}")`;
+      } else {
+        wallpaperBg.style.backgroundImage = `url("file://${encodeURI(uri)}")`;
+      }
+    }
+  };
+
+  window.setAvatar = function(uri) {
+    if (uri) {
+      if (uri.startsWith('data:') || uri.startsWith('file://')) {
+        avatarImg.src = uri;
+      } else {
+        avatarImg.src = `file://${encodeURI(uri)}`;
+      }
+    }
+  };
+
+  // ── Live Clock & Date Update ────────────────────────────────────────────────
+  function updateTime() {
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    clockEl.textContent = `${hours}:${minutes}`;
+
+    const options = { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' };
+    dateEl.textContent = now.toLocaleDateString('en-US', options);
+  }
+
+  setInterval(updateTime, 1000);
+  updateTime();
+  focusInput();
+</script>
+
+</body>
+</html>

@@ -1,4 +1,5 @@
 local colors   = require("colors")
+local icons    = require("icons")
 local settings = require("settings")
 local island   = require("helpers.island")
 
@@ -6,11 +7,11 @@ local island   = require("helpers.island")
 local ram = sbar.add("item", "widgets.ram", {
   position = "right",
   icon = {
-    string        = "󰍛", -- Nerd Font RAM icon
+    string        = icons.ram or "", -- Distinct RAM memory module icon (Nerd Font v3 fa-memory)
     font          = {
       family = settings.font.text,
       style  = settings.font.style_map["Bold"],
-      size   = 14.0,
+      size   = 13.0,
     },
     color         = colors.lavender,
     padding_left  = 8,
@@ -26,7 +27,7 @@ local ram = sbar.add("item", "widgets.ram", {
     color         = colors.white,
     padding_right = 8,
   },
-  update_freq = 3,
+  update_freq = 120, -- update every 2 minutes
   padding_left  = 0,
   padding_right = 0,
 })
@@ -70,7 +71,7 @@ local ram_used_row = sbar.add("item", {
   },
 })
 
-ram:subscribe({ "routine", "forced" }, function()
+local function update_ram()
   sbar.exec("memory_pressure | awk '/System-wide memory free percentage:/ { printf(\"%d\", 100 - $5) }'", function(used_str)
     local used = tonumber(used_str) or 0
     local color = colors.white
@@ -86,11 +87,16 @@ ram:subscribe({ "routine", "forced" }, function()
     })
     ram_used_row:set({ label = used .. "%" })
   end)
-end)
+end
+
+ram:subscribe({ "routine", "forced", "system_woke" }, update_ram)
 
 ram:subscribe("mouse.clicked", function()
   local open = ram_island:query().popup.drawing == "off"
   ram_island:set({ popup = { drawing = open } })
+  if open then
+    update_ram()
+  end
 end)
 
 ram_island:subscribe("mouse.exited.global", function()

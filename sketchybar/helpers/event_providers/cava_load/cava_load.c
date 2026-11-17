@@ -89,6 +89,10 @@ int main(int argc, char** argv) {
         snprintf(sbar_cmd, sizeof(sbar_cmd), "--set %s drawing=off label=''", item_name);
         sketchybar(sbar_cmd);
       }
+      // After ~500 frames of silence (~20s), automatically exit to save battery and release CoreAudio
+      if (silent_count > 500) {
+        break;
+      }
     }
   }
 

@@ -18,16 +18,18 @@ ctrl + alt - k : yabai -m window --swap north
 ctrl + alt - l : yabai -m window --swap east
 
 # Управление формой и геометрией окон
-alt - b : yabai -m space --balance
+alt - b : ~/.config/yabai/scripts/smart_balance.py
 alt - r : yabai -m space --rotate 90
 alt - e : yabai -m window --toggle split
 alt - m : yabai -m space --mirror y-axis
 shift + alt - m : yabai -m space --mirror x-axis
 
 # Размер и состояние окон
-alt - f : yabai -m window --toggle zoom-fullscreen || yabai -m window --grid 1:1:0:0:1:1
+alt - f : ~/.config/yabai/scripts/smart_zoom.py
 alt - space : ~/.config/yabai/scripts/smart_toggle_float.sh
 alt - w : yabai -m window --close
+alt - n : ~/.config/yabai/scripts/toggle_minimize.py
+shift + alt - n : ~/.config/yabai/scripts/toggle_minimize.py --restore
 
 # Изменение размера окон с клавиатуры (Ctrl + Option + Стрелки)
 ctrl + alt - left  : yabai -m window --resize left:-50:0  || yabai -m window --resize right:-50:0
@@ -38,6 +40,9 @@ ctrl + alt - up    : yabai -m window --resize top:0:-50   || yabai -m window --r
 # Rofi-подобный лаунчер приложений и папок (Cmd + Пробел и Option + D)
 cmd - space : ~/.config/rofi/launcher.py
 alt - d : ~/.config/rofi/launcher.py
+shift + alt - w : ~/.config/rofi/wifi_menu.py
+shift + alt - t : ~/.config/rofi/theme_menu.py
+shift + alt - a : ~/.config/rofi/opacity_menu.py
 
 # Переключение рабочих столов (Option + Цифры)
 alt - 1 : yabai -m space --focus 1
@@ -48,3 +53,18 @@ alt - return : open -n -a Kitty
 
 # 3D Coverflow галерея обоев
 alt - g : /Users/new/Documents/Antigravity/waybar/wallpaper_gallery/bin/wallpaper_gallery --toggle
+
+# OCR области экрана (Apple Vision + OSD)
+shift + alt - o : ~/.local/bin/ocr_osd
+
+# PowerMenu (Lock / Sleep / Restart / Log Out / Shut Down)
+shift + alt - p : ~/.local/bin/powermenu --toggle
+
+# Yazi плавающий файловый менеджер (копирование файла в буфер для Cmd+V)
+shift + alt - f : ~/.config/yazi/pick.sh
+shift + alt - g : ~/.config/yazi/fill_open_panel.sh
+
+# Громкость звука (поддержка Многовыходного устройства + BlackHole/cava + OSD)
+sound_up   : ~/.local/bin/audio_vol up --osd
+sound_down : ~/.local/bin/audio_vol down --osd
+mute       : ~/.local/bin/audio_vol mute --osd

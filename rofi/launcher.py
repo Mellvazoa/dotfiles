@@ -119,6 +119,8 @@ if os.path.exists(theme_path):
     except Exception:
         pass
 
+from choose_overlay import run_choose
+
 choose_cmd = [
     "/opt/homebrew/bin/choose",
     "-p", "Type to filter...",
@@ -133,9 +135,7 @@ choose_cmd = [
     "-a",
 ]
 
-proc = subprocess.Popen(choose_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-selected, _ = proc.communicate(input=input_data)
-selected = selected.strip()
+selected = run_choose(choose_cmd, input_data)
 
 if not selected:
     sys.exit(0)

@@ -10,6 +10,7 @@ local app_icons = require("helpers.app_icons")
 -- Spaces go on the LEFT side; they are safe.
 
 local spaces = {}
+local space_names = {}
 
 for i = 1, 10 do
   local space = sbar.add("space", "space." .. i, {
@@ -41,6 +42,7 @@ for i = 1, 10 do
   })
 
   spaces[i] = space
+  space_names[i] = space.name
 
   -- Popup: space preview thumbnail
   local space_popup = sbar.add("item", {
@@ -77,7 +79,7 @@ for i = 1, 10 do
 end
 
 -- Wrap all spaces in a single pill island
-island({ '/space\\.\\d+/' }, "spaces.island")
+island(space_names, "spaces.island")
 
 -- ── Front app (shown between spaces and centre) ───────────────────────────────
 local front_app = sbar.add("item", "front_app", {
@@ -110,6 +112,10 @@ end)
 local space_window_observer = sbar.add("item", { drawing = false, updates = true })
 
 space_window_observer:subscribe("space_windows_change", function(env)
+  if not env.INFO or not env.INFO.apps or not env.INFO.space then return end
+  local target_space = spaces[env.INFO.space]
+  if not target_space then return end
+
   local icon_line = ""
   local no_app    = true
   for app, _ in pairs(env.INFO.apps) do
@@ -119,6 +125,6 @@ space_window_observer:subscribe("space_windows_change", function(env)
   end
   if no_app then icon_line = " —" end
   sbar.animate("tanh", 10, function()
-    spaces[env.INFO.space]:set({ label = icon_line })
+    target_space:set({ label = icon_line })
   end)
 end)

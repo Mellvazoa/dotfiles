@@ -46,6 +46,8 @@ local volume_island = island(
   { popup = { align = "center" } }
 )
 
+local AUDIO_VOL = os.getenv("HOME") .. "/.local/bin/audio_vol"
+
 -- Popup: slider + output device list
 local volume_slider = sbar.add("slider", popup_w, {
   position = "popup." .. volume_island.name,
@@ -59,31 +61,65 @@ local volume_slider = sbar.add("slider", popup_w, {
     knob = { string = "􀀁", drawing = true },
   },
   background    = { color = colors.island, height = 2, y_offset = -20 },
-  click_script  = 'osascript -e "set volume output volume $PERCENTAGE"',
+  click_script  = AUDIO_VOL .. ' set "$PERCENTAGE"',
 })
 
 -- ── Update ────────────────────────────────────────────────────────────────────
-local function update_icon(volume)
-  local icon = icons.volume._0
-  if     volume > 60 then icon = icons.volume._100
-  elseif volume > 30 then icon = icons.volume._66
-  elseif volume > 10 then icon = icons.volume._33
-  elseif volume > 0  then icon = icons.volume._10
+local function update_icon(volume, muted)
+  if muted or volume <= 0 then return icons.volume._0 end
+  if volume > 60 then return icons.volume._100
+  elseif volume > 30 then return icons.volume._66
+  elseif volume > 10 then return icons.volume._33
+  else return icons.volume._10
   end
-  return icon
+end
+
+local function apply_volume_ui(vol, muted)
+  vol = math.max(0, math.min(100, math.floor((tonumber(vol) or 0) + 0.5)))
+  local is_muted = muted or (vol == 0)
+  local lead = vol < 10 and "0" or ""
+  volume_icon:set({
+    icon = {
+      string = update_icon(vol, is_muted),
+      color  = is_muted and colors.grey or colors.lavender,
+    },
+  })
+  volume_pct:set({
+    label = {
+      string = is_muted and "MUTE" or (lead .. vol .. "%"),
+      color  = is_muted and colors.grey or colors.white,
+    },
+  })
+  volume_slider:set({ slider = { percentage = is_muted and 0 or vol } })
+end
+
+local function refresh_volume()
+  sbar.exec(AUDIO_VOL .. " state", function(out)
+    if not out then return end
+    local pct_s, mute_s = out:match("^(%d+)\t([01])")
+    if pct_s then
+      apply_volume_ui(tonumber(pct_s), mute_s == "1")
+    end
+  end)
 end
 
 volume_icon:subscribe("volume_change", function(env)
-  local vol  = tonumber(env.INFO)
-  local lead = vol < 10 and "0" or ""
-  volume_icon:set({ icon  = { string = update_icon(vol) } })
-  volume_pct:set({  label = lead .. vol .. "%" })
-  volume_slider:set({ slider = { percentage = vol } })
+  if env.MUTED ~= nil then
+    local vol = tonumber(env.INFO)
+    if vol then
+      apply_volume_ui(vol, env.MUTED == "1")
+      return
+    end
+  end
+  -- Native Sketchybar volume_change reports 0 on Multi-Output devices;
+  -- query audio_vol so aggregate sub-device volume stays accurate.
+  refresh_volume()
 end)
 
--- ── Popup toggle ──────────────────────────────────────────────────────────────
-local current_device = ""
+volume_icon:subscribe("system_woke", refresh_volume)
+refresh_volume()
 
+-- ── Popup toggle ──────────────────────────────────────────────────────────────
 local function collapse()
   if volume_island:query().popup.drawing == "on" then
     volume_island:set({ popup = { drawing = false } })
@@ -91,34 +127,56 @@ local function collapse()
   end
 end
 
+local function populate_devices(on_done)
+  sbar.exec(AUDIO_VOL .. " devices", function(available)
+    sbar.remove('/volume.device\\.*/')
+    local counter = 0
+    if available then
+      for line in string.gmatch(available, '[^\r\n]+') do
+        local uid, name, cur = line:match("^(.-)\t(.-)\t([01])$")
+        if uid and name then
+          local color = (cur == "1") and colors.white or colors.grey
+          local esc_uid = uid:gsub('"', '\\"')
+          sbar.add("item", "volume.device." .. counter, {
+            position      = "popup." .. volume_island.name,
+            width         = popup_w,
+            scroll_texts  = false,
+            updates       = true,
+            icon          = { drawing = false, width = 0, padding_left = 0, padding_right = 0 },
+            label         = {
+              string        = name,
+              color         = color,
+              align         = "center",
+              width         = popup_w,
+              padding_left  = 0,
+              padding_right = 0,
+            },
+            click_script  = AUDIO_VOL .. ' select "' .. esc_uid ..
+              '" && sketchybar --set /volume.device\\.*/ label.color=' .. colors.grey ..
+              ' --set $NAME label.color=' .. colors.white ..
+              ' --trigger volume_change',
+          })
+          counter = counter + 1
+        end
+      end
+    end
+    if on_done then on_done() end
+  end)
+end
+
+populate_devices()
+
 local function toggle(env)
   if env and env.BUTTON == "right" then
     sbar.exec("open /System/Library/PreferencePanes/Sound.prefpane")
     return
   end
 
-  local open = volume_island:query().popup.drawing == "off"
-  volume_island:set({ popup = { drawing = open } })
-
-  if open then
-    sbar.exec("SwitchAudioSource -t output -c", function(result)
-      current_device = result:sub(1, -2)
-      sbar.exec("SwitchAudioSource -a -t output", function(available)
-        local counter = 0
-        for device in string.gmatch(available, '[^\r\n]+') do
-          local color = (current_device == device) and colors.white or colors.grey
-          sbar.add("item", "volume.device." .. counter, {
-            position     = "popup." .. volume_island.name,
-            width        = popup_w,
-            align        = "center",
-            label        = { string = device, color = color },
-            click_script = 'SwitchAudioSource -s "' .. device ..
-              '" && sketchybar --set /volume.device\\.*/ label.color=' .. colors.grey ..
-              ' --set $NAME label.color=' .. colors.white,
-          })
-          counter = counter + 1
-        end
-      end)
+  local is_closed = volume_island:query().popup.drawing == "off"
+  if is_closed then
+    refresh_volume()
+    populate_devices(function()
+      volume_island:set({ popup = { drawing = true } })
     end)
   else
     collapse()
@@ -126,8 +184,10 @@ local function toggle(env)
 end
 
 local function scroll(env)
-  local delta = env.SCROLL_DELTA
-  sbar.exec('osascript -e "set volume output volume (output volume of (get volume settings) + ' .. delta .. ')"')
+  local delta = tonumber(env.SCROLL_DELTA) or 0
+  if delta ~= 0 then
+    sbar.exec(AUDIO_VOL .. " step " .. delta)
+  end
 end
 
 volume_icon:subscribe("mouse.clicked",         toggle)

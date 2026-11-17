@@ -1,0 +1,14 @@
+[
+  {
+    "name": "DeepSeek Frosted Glass (Refined)",
+    "enabled": true,
+    "sections": [
+      {
+        "code": "/* 1. Базовые подложки: полная прозрачность */\nhtml, body, #root, #root > div, #root > div > div {\n    background: transparent !important;\n    background-color: transparent !important;\n}\n\n/* 2. Нейтральный чистый тонированный глассморфизм (адаптируется под ЛЮБЫЕ обои) */\n:root, [data-ds-dark-theme], body {\n    /* Основной фон чата */\n    --dsw-alias-bg-base: rgba(16, 18, 24, 0.55) !important;\n    /* Сайдбар слева */\n    --dsw-alias-bg-layer-1: rgba(16, 18, 24, 0.75) !important;\n    /* Карточки и модалки */\n    --dsw-alias-bg-layer-2: rgba(22, 25, 34, 0.65) !important;\n    --dsw-alias-bg-layer-3: rgba(28, 32, 44, 0.75) !important;\n    /* Поле ввода сообщения и кнопки */\n    --dsl-textarea-color: rgba(24, 27, 36, 0.80) !important;\n    --dsl-modal-content-color: rgba(22, 25, 34, 0.90) !important;\n    --dsw-specific-menu: rgba(22, 25, 34, 0.90) !important;\n    --dsw-alias-border-inverted: rgba(255, 255, 255, 0.08) !important;\n}\n\n/* 3. Глобальный блюр для эффекта матового стекла */\n#root > div {\n    backdrop-filter: blur(20px) !important;\n    -webkit-backdrop-filter: blur(20px) !important;\n}\n\n/* 4. Верхняя панель заголовка: плавное слияние с фоном */\nheader, [class*=\"header\"], [class*=\"title\"] {\n    background-color: rgba(16, 18, 24, 0.65) !important;\n    backdrop-filter: blur(20px) !important;\n    -webkit-backdrop-filter: blur(20px) !important;\n}\n\n/* 5. Аккуратные скругления поля ввода сообщения */\n[class*=\"input\"], [class*=\"textarea-wrap\"] {\n    border-radius: 16px !important;\n}\n",
+        "domains": [
+          "chat.deepseek.com"
+        ]
+      }
+    ]
+  }
+]

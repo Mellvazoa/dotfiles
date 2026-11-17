@@ -1,11 +1,9 @@
-local settings = require("settings")
 local colors   = require("colors")
 local island   = require("helpers.island")
 local icons    = require("icons")
 
--- ── Launch Cava audio visualizer background provider ─────────────────────────
--- Listens to BlackHole 2ch; automatically shows media.visualizer when audio plays
-sbar.exec("killall cava_load cava >/dev/null 2>&1; $CONFIG_DIR/helpers/event_providers/cava_load/bin/cava_load media.visualizer &")
+-- Stop any leftover bar cava helper if previously running
+sbar.exec("pkill -x cava_load >/dev/null 2>&1; pkill -f 'cava_load/cava\\.conf' >/dev/null 2>&1")
 
 local whitelist = {
   ["Spotify"]       = true,
@@ -62,38 +60,13 @@ local media_title = sbar.add("item", "media.title", {
   },
 })
 
--- Real-time Cava audio visualizer bars (works with Telegram, YouTube, Spotify, etc.)
-local media_visualizer = sbar.add("item", "media.visualizer", {
-  position      = "right",
-  drawing       = false,
-  padding_left  = 6,
-  padding_right = 6,
-  icon = {
-    string        = "󰝚",
-    font          = { family = settings.font.text, size = 12.0 },
-    color         = colors.lavender,
-    padding_left  = 2,
-    padding_right = 4,
-  },
-  label = {
-    font = {
-      family = settings.font.text,
-      style  = settings.font.style_map["Bold"],
-      size   = 12.0,
-    },
-    color     = colors.lavender,
-    string    = "",
-    y_offset  = 0,
-  },
-})
-
 -- Popup controls
 sbar.add("item", { position = "popup." .. media_cover.name, icon = { string = icons.media.back },       label = { drawing = false }, click_script = "nowplaying-cli previous" })
 sbar.add("item", { position = "popup." .. media_cover.name, icon = { string = icons.media.play_pause }, label = { drawing = false }, click_script = "nowplaying-cli togglePlayPause" })
 sbar.add("item", { position = "popup." .. media_cover.name, icon = { string = icons.media.forward },    label = { drawing = false }, click_script = "nowplaying-cli next" })
 
 -- Wrap in media island
-island({ media_cover.name, media_artist.name, media_title.name, media_visualizer.name }, "media.island")
+island({ media_cover.name, media_artist.name, media_title.name }, "media.island")
 
 local interrupt = 0
 local function animate_detail(detail)
@@ -106,18 +79,21 @@ local function animate_detail(detail)
 end
 
 media_cover:subscribe("media_change", function(env)
-  if whitelist[env.INFO.app] or env.INFO.state == "playing" then
-    local drawing = env.INFO.state == "playing"
-    media_artist:set({ drawing = drawing, label = env.INFO.artist })
-    media_title:set({  drawing = drawing, label = env.INFO.title })
-    media_cover:set({  drawing = drawing })
-    if drawing then
+  if not env or not env.INFO or not env.INFO.state then return end
+  local is_playing = (env.INFO.state == "playing")
+  if whitelist[env.INFO.app] or is_playing then
+    media_artist:set({ drawing = is_playing, label = env.INFO.artist })
+    media_title:set({  drawing = is_playing, label = env.INFO.title })
+    media_cover:set({  drawing = is_playing })
+    if is_playing then
       animate_detail(true)
       interrupt = interrupt + 1
       sbar.delay(5, animate_detail)
     else
       media_cover:set({ popup = { drawing = false } })
     end
+  else
+    media_cover:set({ popup = { drawing = false } })
   end
 end)
 
@@ -125,4 +101,3 @@ media_cover:subscribe("mouse.entered",      function() interrupt = interrupt + 1
 media_cover:subscribe("mouse.exited",       function() animate_detail(false) end)
 media_cover:subscribe("mouse.clicked",      function() media_cover:set({ popup = { drawing = "toggle" } }) end)
 media_title:subscribe("mouse.exited.global",function() media_cover:set({ popup = { drawing = false } }) end)
-media_visualizer:subscribe("mouse.clicked", function() media_cover:set({ popup = { drawing = "toggle" } }) end)

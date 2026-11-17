@@ -1,61 +1,42 @@
-#!/usr/bin/env bash
+#!/usr/bin/env python3
+"""Fast Alt+Space float toggle for yabai (direct UNIX socket)."""
+import os
+import sys
 
-# Query currently focused window
-win_json=$(yabai -m query --windows --window 2>/dev/null)
-if [ -z "$win_json" ] || [ "$win_json" = "null" ]; then
-    exit 0
-fi
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from smart_balance import adjust_windows, q, y
+import smart_zoom
 
-win_id=$(echo "$win_json" | jq -r '.id')
-app=$(echo "$win_json" | jq -r '.app')
-is_floating=$(echo "$win_json" | jq -r '."is-floating"')
+GRID = "10:10:1:1:8:8"
 
-if [ "$is_floating" = "true" ]; then
-    # Window is currently floating -> Tile it into the layout
-    yabai -m window "$win_id" --toggle float
-    sleep 0.08
 
-    # Double check if window actually became managed
-    tiled_check=$(yabai -m query --windows --window "$win_id" 2>/dev/null | jq -r '."is-floating"')
-    if [ "$tiled_check" = "true" ]; then
-        yabai -m window "$win_id" --toggle float
-        sleep 0.08
-    fi
+def main():
+    win = q("--windows", "--window")
+    if not win:
+        return
 
-    # Measure geometry to detect any off-screen overflow or neighbor overlap
-    disp_w=$(yabai -m query --displays --display 2>/dev/null | jq -r '.frame.w // 1470' | cut -d'.' -f1)
-    max_x=$(( disp_w - 6 ))
+    wid = win["id"]
+    space = win.get("space", 1)
 
-    win_frame=$(yabai -m query --windows --window "$win_id" 2>/dev/null | jq -r '.frame')
-    cur_x=$(echo "$win_frame" | jq -r '.x // 0' | cut -d'.' -f1)
-    cur_w=$(echo "$win_frame" | jq -r '.w // 0' | cut -d'.' -f1)
-    end_x=$(( cur_x + cur_w ))
+    state = smart_zoom.load(space)
+    if state and state.get("zoomed_id") == wid:
+        smart_zoom.unzoom(space, state)
+        win = q("--windows", "--window", wid) or win
 
-    # Case A: Window is placed on the right and overflows the right edge of the screen
-    if [ "$end_x" -gt "$max_x" ]; then
-        overflow=$(( end_x - max_x + 8 ))
-        yabai -m window "$win_id" --resize left:-$overflow:0 2>/dev/null || \
-        yabai -m window "$win_id" --resize right:$overflow:0 2>/dev/null
-    fi
+    if win.get("is-floating"):
+        # Float -> Tile into layout and fit all windows cleanly
+        y("window", wid, "--toggle", "float")
+        y("window", wid, "--sub-layer", "normal")
+        y("space", "--balance")
+        adjust_windows(space, equalize_scalable=True)
+    else:
+        # Tile -> Float and center, then rebalance remaining tiled windows
+        y("window", wid, "--toggle", "float")
+        y("window", wid, "--grid", GRID)
+        y("window", wid, "--sub-layer", "above")
+        y("space", "--balance")
+        adjust_windows(space)
 
-    # Case B: Window is on the left and overflows into the neighbor to the right
-    if [ "$cur_x" -lt 50 ]; then
-        next_x=$(yabai -m query --windows --space 2>/dev/null | jq "[.[] | select(.id != $win_id and (.\"is-floating\" == false) and .\"is-visible\" == true and .frame.x > $cur_x)] | sort_by(.frame.x) | .[0].frame.x // 0" | cut -d'.' -f1)
-        if [ "$next_x" -gt 0 ] && [ "$end_x" -gt "$next_x" ]; then
-            overlap=$(( end_x - next_x + 8 ))
-            yabai -m window "$win_id" --resize right:$overlap:0 2>/dev/null || \
-            yabai -m window "$win_id" --resize left:-$overlap:0 2>/dev/null
-        fi
-    fi
 
-else
-    # Window is currently tiled -> Float it back
-    yabai -m window "$win_id" --toggle float
-    sleep 0.05
-
-    # Center floating window nicely
-    yabai -m window "$win_id" --grid 10:10:1:1:8:8 2>/dev/null
-
-    # Rebalance remaining tiled windows so no void is left
-    yabai -m space --balance 2>/dev/null
-fi
+if __name__ == "__main__":
+    main()
